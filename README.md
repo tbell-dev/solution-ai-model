@@ -48,3 +48,7 @@ after download, place .pkl file to checkpoints/
 [faster-rcnn model](https://drive.google.com/drive/folders/1YqmH7f5pDmfLgZFqcE4iBQPaORnpKrgW),[mask_rcnn model](https://drive.google.com/drive/folders/1ySaej3dVPBVPQBRJZAabHX2wZF555tlr)
 and place each files into models/faster_rcnn/1/ , models/mask_rcnn/1/  
 
+# Run
+```sh
+python inference.py --image {image path} --model {faster_rcnn/infer_pipeline} --task {od/seg} --conf {float type ex.0.67 , 0.89} --class_name person --serving-port 8000
+```
