@@ -41,7 +41,7 @@ pycocotools==2.0.4
 mkdir checkpoints
 cd checkpoints
 ```
-download .pkl file from [here] (https://drive.google.com/drive/folders/1iThtzq1aKOaLnbExZe6Zsy8Kv0-l7Dr0) and [here](https://drive.google.com/drive/folders/13Bfn7B6bkiKopv-3OOqf2O14elJ4I0ul)
+download .pkl file from [here](https://drive.google.com/drive/folders/1iThtzq1aKOaLnbExZe6Zsy8Kv0-l7Dr0) and [here](https://drive.google.com/drive/folders/13Bfn7B6bkiKopv-3OOqf2O14elJ4I0ul)
 after download, place .pkl file to checkpoints/
 
 # downdload torchscript model for serving
