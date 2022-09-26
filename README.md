@@ -42,9 +42,9 @@ mkdir checkpoints
 cd checkpoints
 ```
 download .pkl file from [here] (https://drive.google.com/drive/folders/1iThtzq1aKOaLnbExZe6Zsy8Kv0-l7Dr0) and [here](https://drive.google.com/drive/folders/13Bfn7B6bkiKopv-3OOqf2O14elJ4I0ul)
-# after download, place .pkl file to checkpoints/
+after download, place .pkl file to checkpoints/
 
 #downdload torchscript model for serving
 [faster-rcnn model](https://drive.google.com/drive/folders/1YqmH7f5pDmfLgZFqcE4iBQPaORnpKrgW),[mask_rcnn model](https://drive.google.com/drive/folders/1ySaej3dVPBVPQBRJZAabHX2wZF555tlr)
-# and place each files into models/faster_rcnn/1/ , models/mask_rcnn/1/  
+and place each files into models/faster_rcnn/1/ , models/mask_rcnn/1/  
 
