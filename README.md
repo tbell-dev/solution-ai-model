@@ -34,6 +34,7 @@ Shapely==1.8.4
 opencv-python==4.6.0.66
 multidict==6.0.2
 pycocotools==2.0.4
+albumentations==1.3.0
 ```
 
 ## download models
