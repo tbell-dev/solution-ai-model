@@ -3,7 +3,7 @@
 
 모델 서빙 서버 및 클라이언트 개발 with Triton 
 
-![](inference-logic.png)
+![](img/inference-logic.png)
 
 ## version compatibility
 
