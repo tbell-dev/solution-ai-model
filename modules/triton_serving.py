@@ -8,6 +8,7 @@ import numpy as np
 from modules.labels import COCO_NAMES
 
 def inference(model_name,image_file,task_type,port=8000,print_output=True, host="localhost"):
+    
     e = time.time()
     if task_type == "seg":
         pred = client_v2(image_file, model_name,task_type,port, print_output, host)
@@ -18,6 +19,9 @@ def inference(model_name,image_file,task_type,port=8000,print_output=True, host=
     return pred
 
 def client_v1(image_file, model_name,task_type,port=8000, print_output=True, host="localhost"):
+    
+    print(f"image_file : {image_file}")
+    
     img = np.array(Image.open(image_file))
     img = np.ascontiguousarray(img.transpose(2, 0, 1))
     # Define model's inputs
