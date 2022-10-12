@@ -1,21 +1,21 @@
-import torch, detectron2
-import detectron2
-from detectron2.utils.logger import setup_logger
-setup_logger()
+#import torch, detectron2
+#import detectron2
+#from detectron2.utils.logger import setup_logger
+#setup_logger()
 
 # import some common libraries
 import numpy as np
-import os, json, cv2, random
+import os, json, random
 
 
-from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog, DatasetCatalog
+#from detectron2 import model_zoo
+#from detectron2.engine import DefaultPredictor
+#from detectron2.config import get_cfg
+#from detectron2.utils.visualizer import Visualizer
+#from detectron2.data import MetadataCatalog, DatasetCatalog
 
-import cv2
-from matplotlib import pyplot as plt
+#import cv2
+#from matplotlib import pyplot as plt
 
 #custom helper module
 from modules.post_proccessing import *
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     host = str(args.serving_host)
     
     pred = inference(model_name,image_path,task_type,port=port,host=host)
-    result = infer_result_filter(pred,task_type,confidence,class_name)
-    response_data = coco_format_inverter(result)
+    #result = infer_result_filter(pred,task_type,confidence)
+    response_data = coco_format_inverter(pred)
     
     print(response_data)
