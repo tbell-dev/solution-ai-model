@@ -10,9 +10,9 @@ from modules.labels import COCO_NAMES
 def inference(model_name,image_file,task_type,port=8000,print_output=True, host="localhost"):
     e = time.time()
     if task_type == "seg":
-        pred = client_v2(image_file, model_name,task_type,port, print_output)
+        pred = client_v2(image_file, model_name,task_type,port, print_output, host)
     elif task_type == "od":
-        pred = client_v1(image_file, model_name,task_type,port, print_output)
+        pred = client_v1(image_file, model_name,task_type,port, print_output, host)
     s = time.time()    
     print('speed:', (s - e))
     return pred
