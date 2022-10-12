@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 from modules.labels import COCO_NAMES
 
-def inference(model_name,image_file,task_type,port=8000,print_output=True):
+def inference(model_name,image_file,task_type,port=8000,print_output=True, host="localhost"):
     e = time.time()
     if task_type == "seg":
         pred = client_v2(image_file, model_name,task_type,port, print_output)
@@ -17,7 +17,7 @@ def inference(model_name,image_file,task_type,port=8000,print_output=True):
     print('speed:', (s - e))
     return pred
 
-def client_v1(image_file, model_name,task_type,port=8000, print_output=True):
+def client_v1(image_file, model_name,task_type,port=8000, print_output=True, host="localhost"):
     img = np.array(Image.open(image_file))
     img = np.ascontiguousarray(img.transpose(2, 0, 1))
     # Define model's inputs
@@ -40,7 +40,7 @@ def client_v1(image_file, model_name,task_type,port=8000, print_output=True):
         
     # Send request to Triton server
     triton_client = httpclient.InferenceServerClient(
-        url="localhost:"+str(port), verbose=False)
+        url=str(host)+":"+str(port), verbose=False)
     results = triton_client.infer(model_name, inputs=inputs, outputs=outputs)
     response_info = results.get_response()
     outputs = {}
@@ -52,7 +52,7 @@ def client_v1(image_file, model_name,task_type,port=8000, print_output=True):
     return outputs
 
 
-def client_v2(image_file, model_name,task_type,port=8000, print_output=False):
+def client_v2(image_file, model_name,task_type,port=8000, print_output=False, host="localhost"):
     with open(image_file, 'rb') as fi:
         image_bytes = fi.read()
     image_bytes = np.array([image_bytes], dtype=np.bytes_)
@@ -75,7 +75,7 @@ def client_v2(image_file, model_name,task_type,port=8000, print_output=False):
         outputs.append(httpclient.InferRequestedOutput('shape__3'))
     # Send request to Triton server
     triton_client = httpclient.InferenceServerClient(
-        url="localhost:"+str(port), verbose=False)
+        url=str(host)+":"+str(port), verbose=False)
     results = triton_client.infer(model_name, inputs=inputs, outputs=outputs)
     response_info = results.get_response()
     outputs = {}
@@ -135,6 +135,7 @@ def parse_args():
     parser.add_argument('--class_name', type=str ,default="person")
     parser.add_argument('--print-output', type=bool ,default=True)
     parser.add_argument('--serving-port', type=int ,default=8000)
+    parser.add_argument('--serving-host', type=str ,default="localhost")
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -147,11 +148,12 @@ if __name__ == '__main__':
     class_name =  args.class_name
     # n_reqs = int(args.num_reqs)
     port = int(args.serving_port)
+    host = str(args.serving-host)
     
     # model_name = "mask_rcnn"
     # image_path = "/home/tbelldev/workspace/autoLabeling/dataset/coco_person/images/val/000000408774.jpg"
 
-    pred = inference(model_name,image_path,task_type,port=port)
+    pred = inference(model_name,image_path,task_type,port=port, host=host)
     result = infer_result_filter(pred,task_type,confidence,class_name)
     
     if args.print_output : print(result)
