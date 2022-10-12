@@ -104,6 +104,7 @@ def parse_args():
     parser.add_argument('--conf', type=float , default=0.6)
     parser.add_argument('--class_name', type=str ,default="person")
     parser.add_argument('--serving-port', type=int ,default=8000)
+    parser.add_argument('--serving-host', type=str ,default="localhost")
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -114,8 +115,9 @@ if __name__ == '__main__':
     confidence = args.conf
     class_name =  args.class_name
     port = int(args.serving_port)
+    host = str(args.serving_host)
     
-    pred = inference(model_name,image_path,task_type,port=port)
+    pred = inference(model_name,image_path,task_type,port=port,host=host)
     result = infer_result_filter(pred,task_type,confidence,class_name)
     response_data = coco_format_inverter(result)
     
