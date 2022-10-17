@@ -3,13 +3,10 @@ import random
 import cv2
 import numpy as np
 import os
-# from matplotlib import pyplot as plt
 
 from glob import glob
 import json
 import argparse
-
-import pycocotools
 from pycocotools.coco import COCO
 
 from PIL import Image
@@ -52,7 +49,7 @@ class augmentator:
     def load_pipeline(self):
         if self.task == "seg":
             transform = A.Compose([
-            A.RandomCrop(width=int(self.min_image_size[0]*0.9), height=int(self.min_image_size[1]*0.9),p=0.5),
+            # A.RandomCrop(width=int(self.min_image_size[0]*0.9), height=int(self.min_image_size[1]*0.9),p=0.5),
             A.HorizontalFlip(p=0.5),
             A.RandomRotate90(),
             A.RandomBrightnessContrast(brightness_limit=(-0.2, 0.3), contrast_limit=(-0.2, 0.3), p=0.5),
@@ -64,7 +61,7 @@ class augmentator:
             ])
         elif self.task == "od":
             transform = A.Compose([
-            A.RandomCrop(height=200, width=200,p=0.5),
+            # A.RandomCrop(width=int(self.min_image_size[0]*0.9), height=int(self.min_image_size[1]*0.9),p=0.5),
             A.HorizontalFlip(p=0.5),
             A.RandomRotate90(),
             A.RandomBrightnessContrast(brightness_limit=(-0.2, 0.3), contrast_limit=(-0.2, 0.3), p=0.5),
