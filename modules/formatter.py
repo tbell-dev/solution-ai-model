@@ -5,38 +5,14 @@ import cv2
 import pycocotools
 from pycocotools.coco import COCO
 
-from modules.post_proccessing import *
+from modules.post_proccessing import create_sub_mask_annotation
 
 def create_coco_dict_seg(image,segmentations,bbox,id,idx):
     '''
     only creates coco dataset annotation field 
     '''
     json_data = {}
-    # files['info'] = {"year": 2022, "version": "1.0", "description": "Sementic Segmentation", "date_created": "0922"}
-    # files['licenses'] = [{'id': 1,
-    #   'name': 'GNU General Public License v3.0',
-    #   'url': 'test'}]
-    # files["type"] = "instances"
-    # files['categories'] = []
     json_data["annotations"] = []
-    # files['images'] = []
-    # files['categories'].append({'id': 0, 'name': "0", 'supercategory': "0"})
-                  
-    # im = cv2.imread(file, 0)
-    # empty = np.zeros_like(im)
-    # files['images'].append({'date_captured': '2021',
-    #                           'file_name': file,
-    #                           'id': 0,
-    #                           'height': im.shape[0],
-    #                           'width': im.shape[1]})
-                      
-    # tmp = im.copy()
-    # #get contours of image
-    # contours,hierachy = cv2.findContours(tmp, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    # #black images to draw the contours on
-    # blank = np.zeros_like(tmp)
-
-    # for idx in range(len(segmentations)):
     segmentation = []
 
     xmin,ymin,width,height = bbox.tolist()

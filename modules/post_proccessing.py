@@ -57,7 +57,7 @@ def inference_class_filter(output,class_name:list):
                     pred.append(output["instances"][j])
         else:pred = None
     return pred
-
+#######################################################################
 def create_sub_masks(mask_image, width, height):
     # Initialize a dictionary of sub-masks indexed by RGB colors
     sub_masks = {}
@@ -105,9 +105,14 @@ def create_sub_mask_annotation(sub_mask):
             continue
 
         polygons.append(poly)
-
-        segmentation = np.array(poly.exterior.coords).ravel().tolist()
-        segmentations.append(segmentation)
+        
+        if type(poly) == MultiPolygon:
+            poly = list(poly)
+            for i in range(len(poly)):
+                segmentations.append(np.array(poly[i].exterior.coords).ravel().tolist())
+        else:
+            segmentation = np.array(poly.exterior.coords).ravel().tolist()
+            segmentations.append(segmentation)
     
     return polygons, segmentations
 
