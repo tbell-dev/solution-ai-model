@@ -8,18 +8,19 @@ from detectron2.config import get_cfg
 from detectron2.data import transforms as T
 from detectron2.data import DatasetMapper, build_detection_train_loader
 
-import os
+import os, argparse
 
 class trainer:
     def __init__(self,augmentated_dir,labeling_type = "seg",v=0.7):
         self.output_dir = augmentated_dir
         self.v = v
+        self.cfg = None
         self.task_type = labeling_type
         self.train_path = self.output_dir+"/train/"
         self.val_path = self.output_dir+"/val/"
         self.cats = spliter(self.output_dir,v=self.v)
         self.register_data()
-        self.start()
+        # self.start()
         
     def register_data(self):
         self.data_clear()
@@ -51,8 +52,32 @@ class trainer:
         cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512   # The "RoIHead batch size". 128 is faster, and good enough for this toy dataset (default: 512)
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(self.cats)  # only has one class (ballon). (see https://detectron2.readthedocs.io/tutorials/datasets.html#update-the-config-for-new-datasets)
         # NOTE: this config means the number of classes, but a few popular unofficial tutorials incorrect uses num_classes+1 here.
+        
+        self.cfg = cfg
 
-        os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-        trainer = DefaultTrainer(cfg)
+        os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+        trainer = DefaultTrainer(self.cfg)
         trainer.resume_or_load(resume=False)
         trainer.train()
+        
+        return cfg
+    
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset_dir',help="image & json path from local filesystem root of train, val", required=True)
+    parser.add_argument('--labeling_type', type=str ,default="od", required=True)
+    parser.add_argument('--split',  type=float ,default=0.7)
+    return parser.parse_args()
+
+if __name__ == '__main__':
+    args = parse_args()
+    
+    dataset_dir = args.dataset_dir
+    labeling_type = args.labeling_type
+    v = args.split
+    
+    # augmented_dir = "/home/tbelldev/workspace/autoLabeling/api_test/user_dataset_sample_2/augmented_data"
+    # labeling_type = "seg"
+    
+    train = trainer(dataset_dir,labeling_type,v=0.7)
+    cfg = train.start()
