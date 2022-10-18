@@ -1,3 +1,4 @@
+import torch, gc
 from modules.split import spliter
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.data.datasets import register_coco_instances
@@ -20,7 +21,6 @@ class trainer:
         self.val_path = self.output_dir+"/val/"
         self.cats = spliter(self.output_dir,v=self.v)
         self.register_data()
-        # self.start()
         
     def register_data(self):
         self.data_clear()
@@ -60,11 +60,15 @@ class trainer:
         trainer.resume_or_load(resume=False)
         trainer.train()
         
+        #for free gpu
+        gc.collect()
+        torch.cuda.empty_cache()
+        
         return cfg
     
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_dir',help="image & json path from local filesystem root of train, val", required=True)
+    parser.add_argument('--dataset_dir',help="image & json path from local filesystem, root of train/ & val/", required=True)
     parser.add_argument('--labeling_type', type=str ,default="od", required=True)
     parser.add_argument('--split',  type=float ,default=0.7)
     return parser.parse_args()
@@ -75,9 +79,6 @@ if __name__ == '__main__':
     dataset_dir = args.dataset_dir
     labeling_type = args.labeling_type
     v = args.split
-    
-    # augmented_dir = "/home/tbelldev/workspace/autoLabeling/api_test/user_dataset_sample_2/augmented_data"
-    # labeling_type = "seg"
     
     train = trainer(dataset_dir,labeling_type,v=0.7)
     cfg = train.start()
