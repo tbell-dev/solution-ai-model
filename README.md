@@ -20,12 +20,19 @@ detectron2(v0.6)
 triton server(2.12.0)
 ```
 
+## pytorch & detectron installation
+### pytorch
+```sh
+pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
+```
+### detectron2
+```sh
+python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu113/torch1.10/index.html
+```
+
 ## requirements
 ```sh
-torch==1.11.0+cu113
-torchaudio==0.11.0+cu113
-torchvision==0.12.0+cu113
-
 tqdm==4.64.1
 tritonclient[all]
 Pillow==9.2.0
