@@ -1,7 +1,7 @@
 from glob import glob
 import random
 import json
-from tool.augmentation import coco_style_gen
+from modules.formatter import coco_style_gen
 from pycocotools.coco import COCO
 import shutil , os
 

@@ -12,19 +12,7 @@ from pycocotools.coco import COCO
 from PIL import Image
 
 from datetime import date
-
-def coco_style_gen():
-    today = date.today()
-    files = {}
-    files['info'] = {"year": str(today.year), "version": "1.0", "description": "Person Segmentation", "date_created": str(today.month)+"/"+str(today.day)}
-    files['licenses'] = [{'id': 1,
-        'name': 'TBell - sslo general license v1',
-        'url': 'https://sslo.ai/'}]
-    files["type"] = "instances"
-    files['categories'] = []
-    files["annotations"] = []
-    files['images'] = []
-    return files
+from modules.formatter import coco_style_gen
 
 class augmentator:
     # user 정보를 활용하여 dataset의 위치를 특정 -> image와 json 파일을 불러옴

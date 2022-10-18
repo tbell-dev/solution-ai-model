@@ -6,6 +6,20 @@ import pycocotools
 from pycocotools.coco import COCO
 
 from modules.post_proccessing import create_sub_mask_annotation
+from datetime import date
+
+def coco_style_gen():
+    today = date.today()
+    files = {}
+    files['info'] = {"year": str(today.year), "version": "1.0", "description": "Person Segmentation", "date_created": str(today.month)+"/"+str(today.day)}
+    files['licenses'] = [{'id': 1,
+        'name': 'TBell - sslo general license v1',
+        'url': 'https://sslo.ai/'}]
+    files["type"] = "instances"
+    files['categories'] = []
+    files["annotations"] = []
+    files['images'] = []
+    return files
 
 def create_coco_dict_seg(image,segmentations,bbox,id,idx):
     '''
