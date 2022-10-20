@@ -8,7 +8,7 @@ AI core 아키텍쳐
 ![](img/inference-logic.png)
 
 데이터 증강 프로세스
-![](img/data_aug_process.png)
+![](img/data_aug_process.PNG)
 
 ## version compatibility
 
