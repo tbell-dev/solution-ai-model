@@ -8,18 +8,20 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.data import transforms as T
 from detectron2.data import DatasetMapper, build_detection_train_loader
-
+import shutil
+from glob import glob
 import os, argparse
 
 class trainer:
-    def __init__(self,augmentated_dir,labeling_type = "seg",v=0.7):
+    def __init__(self,augmentated_dir,project_name,labeling_type = "seg",v=0.7,op="cp"):
         self.output_dir = augmentated_dir
         self.v = v
+        self.project_name = str(project_name)
         self.cfg = None
         self.task_type = labeling_type
         self.train_path = self.output_dir+"/train/"
         self.val_path = self.output_dir+"/val/"
-        self.cats = spliter(self.output_dir,v=self.v)
+        self.cats = spliter(self.output_dir,v=self.v,op=op)
         self.register_data()
         
     def register_data(self):
@@ -40,7 +42,7 @@ class trainer:
              model_pth = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"
              
         cfg.merge_from_file(model_zoo.get_config_file(model_pth))
-        cfg.OUTPUT_DIR = self.output_dir +"/output/"
+        cfg.OUTPUT_DIR = self.output_dir +"/"+self.project_name+"/"
         cfg.DATASETS.TRAIN = ("my_dataset_train",)
         cfg.DATASETS.TEST = ()
         cfg.DATALOADER.NUM_WORKERS = 2
@@ -69,6 +71,7 @@ class trainer:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_dir',help="image & json path from local filesystem, root of train/ & val/", required=True)
+    parser.add_argument('--project_name', type=str ,default="0", required=True)
     parser.add_argument('--labeling_type', type=str ,default="od", required=True)
     parser.add_argument('--split',  type=float ,default=0.7)
     return parser.parse_args()
@@ -78,7 +81,8 @@ if __name__ == '__main__':
     
     dataset_dir = args.dataset_dir
     labeling_type = args.labeling_type
+    project_name = args.project_name
     v = args.split
     
-    train = trainer(dataset_dir,labeling_type,v=0.7)
+    train = trainer(dataset_dir,project_name,labeling_type,v=0.7,op="cp")
     cfg = train.start()
