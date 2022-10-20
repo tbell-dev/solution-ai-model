@@ -10,6 +10,11 @@ from skimage import measure                                # (pip install scikit
 from shapely.geometry import Polygon, MultiPolygon         # (pip install Shapely)
 import os
 
+from matplotlib import pyplot as plt
+
+
+
+
 default_class ={0:"person"}
 
 def get_boxes(outputs:list):
@@ -169,3 +174,44 @@ def get_coco_json_format():
     }
 
     return coco_format
+
+def show_result_from_local_inference(impath,id_list,cat_list,predictor,task_type):
+    image = cv2.imread(impath)
+    img = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+    outputs = predictor(img)
+    imco = img.copy()
+    contours = []
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    color = (0,0,0)
+    if task_type == "od":
+        for i,box in enumerate(outputs['instances'].pred_boxes):
+            text = ""
+            x1,y1,x2,y2 = box.cpu().numpy()
+            if str(outputs['instances'].pred_classes[i].cpu().numpy()) == "0": 
+                text = str(cat_list[0])+" "+ str(round(float(outputs['instances'].scores[i].cpu().numpy()),2))
+                color = (255,0,0)
+            elif str(outputs['instances'].pred_classes[i].cpu().numpy()) == "1": 
+                text = str(cat_list[0])+" "+str(round(float(outputs['instances'].scores[i].cpu().numpy()),2))
+                color = (0,255,0)
+            elif str(outputs['instances'].pred_classes[i].cpu().numpy()) == "2": 
+                text = str(cat_list[0])+" "+str(round(float(outputs['instances'].scores[i].cpu().numpy()),2))
+                color = (0,0,255)
+                
+            cv2.rectangle(imco,(int(x1),int(y1)),(int(x2),int(y2)),color,2)
+            cv2.putText(imco,text,(int(x1),int(y1-10)),font,0.5,color,2)
+            print(text)
+            
+    elif task_type == "seg":
+        for pred_mask in outputs['instances'].pred_masks.cpu():
+            # pred_mask is of type torch.Tensor, and the values are boolean (True, False)
+            # Convert it to a 8-bit numpy array, which can then be used to find contours
+            mask = pred_mask.numpy().astype('uint8')
+            contour, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+
+            contours.append(contour[0]) # contour is a tuple (OpenCV 4.5.2), so take the first element which is the array of contour points
+
+        for contour in contours:
+            cv2.drawContours(imco, [contour], -1, (255,0,0), 2)
+        
+    plt.imshow(imco)
+    plt.show()
