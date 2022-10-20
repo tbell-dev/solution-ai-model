@@ -5,8 +5,10 @@ AI core 아키텍쳐
 ![](img/core_arch.PNG)
 
 모델 서빙 서버 및 클라이언트 개발 with Triton 
-
 ![](img/inference-logic.png)
+
+데이터 증강 프로세스
+![](img/data_aug_process.png)
 
 ## version compatibility
 
