@@ -2,7 +2,7 @@
 > auto-labeling AI Back-end 개발
 
 AI core 아키텍쳐
-![](img/core_arch.png)
+![](img/core_arch.PNG)
 
 모델 서빙 서버 및 클라이언트 개발 with Triton 
 
