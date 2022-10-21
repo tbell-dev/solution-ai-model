@@ -1,8 +1,7 @@
 import docker
 
-client = docker.from_env()
-
 def trainserver_start(dataset_path,labeling_type,project_name):
+    client = docker.from_env()
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:t-v0.1',
     name = "trainserver",
