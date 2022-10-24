@@ -1,3 +1,4 @@
+from genericpath import isdir
 import torch, gc
 # from modules.split import spliter
 from detectron2.data import MetadataCatalog, DatasetCatalog
@@ -128,7 +129,7 @@ class trainer:
              model_pth = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"
              
         cfg.merge_from_file(model_zoo.get_config_file(model_pth))
-        cfg.OUTPUT_DIR = "/workspace/output/"
+        cfg.OUTPUT_DIR = "/workspace/output/"+self.project_name
         cfg.DATASETS.TRAIN = ("my_dataset_train",)
         cfg.DATASETS.TEST = ()
         cfg.DATALOADER.NUM_WORKERS = 2
@@ -142,8 +143,13 @@ class trainer:
         # NOTE: this config means the number of classes, but a few popular unofficial tutorials incorrect uses num_classes+1 here.
         
         self.cfg = cfg
-
-        os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+        
+        if os.path.isdir(self.cfg.OUTPUT_DIR):
+            model_repo = "/workspace/output"
+            same_prjs = [i for i in glob(model_repo+'/*') if self.project_name in i.split("/")[-1]]
+            self.cfg.OUTPUT_DIR = "/workspace/output/"+self.project_name+"_"+str(len(same_prjs))
+            os.makedirs(self.cfg.OUTPUT_DIR)
+        else: os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
         trainer = DefaultTrainer(self.cfg)
         trainer.resume_or_load(resume=False)
         trainer.train()
@@ -156,8 +162,8 @@ class trainer:
     
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_dir',help="image & json path from local filesystem, root of train/ & val/", type=str ,default="/workspace/dataset/", required=True)
-    parser.add_argument('--project_name', type=str ,default="0")
+    parser.add_argument('--dataset_dir',help="image & json path from local filesystem, root of train/ & val/", type=str ,default="/workspace/dataset/")
+    parser.add_argument('--project_name', type=str ,default="0",required=True)
     parser.add_argument('--labeling_type', type=str ,default="bbox", required=True)
     parser.add_argument('--split',  type=float ,default=0.7)
     return parser.parse_args()
