@@ -14,18 +14,19 @@ def get_loss(metric_path):
     return json_data[-1]
 
 def model_validation(model_repo,current_prj_name):
-    prjs = [i for i in glob(model_repo+"/*")]
+    prjs = [i for i in glob(model_repo+"/*") if current_prj_name in i.split("/")[-1]]
     print(prjs)
-    current_loss,current_prj_indx = 0,None
+    latest_result = prjs[-1]
+    previous_result = prjs[:-1]
+    latest_loss = get_loss(latest_result)["total_loss"]
+    
     previous_losses = []
-    for i in range(len(prjs)):
-        if current_prj_name == prjs[i].split("/")[-1]:
-            current_loss = get_loss(prjs[i])["total_loss"]
-            current_prj_indx = i
-        else :
-            previous_losses.append(get_loss(prjs[i])["total_loss"])
+    for i in range(len(previous_result)):
+        previous_losses.append(get_loss(previous_result[i])["total_loss"])
             
-    if min(previous_losses) < current_loss : 
-        return "model fail"
-    elif min(previous_losses) >= current_loss : 
-        return prjs[current_prj_indx]+"/model_final.pth"
+    if min(previous_losses) < latest_loss : 
+        min_loss = min(previous_losses)
+        idx = previous_losses.index(min_loss)
+        return previous_result[idx]+"/model_final.pth"
+    elif min(previous_losses) >= latest_loss : 
+        return latest_result+"/model_final.pth"
