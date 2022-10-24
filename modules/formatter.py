@@ -111,7 +111,7 @@ def coco_format_inverter(result):
             # json_data = create_coco_dict_seg(binary_mask,segmentations,result["BBOXES"][i],result["CLASSES"][i],i)
             json_data = create_coco_dict_seg_v2(binary_mask,result["MASKS"][i],result["BBOXES"][i],result["CLASSES"][i],i)
             coco_anno_type_json_list.append(json_data)
-            coco_anno_type_json_list.append(json_data)
+            # coco_anno_type_json_list.append(json_data)
     # print(coco_anno_type_json_list)
     else:
         for i in range(len(result["bboxes__0"])):
