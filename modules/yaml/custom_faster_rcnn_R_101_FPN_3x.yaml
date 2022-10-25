@@ -1,0 +1,3 @@
+_BASE_: "/home/tbelldev/workspace/autoLabeling/api_test/detectron2/configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
+MODEL:
+  WEIGHTS: "/home/tbelldev/workspace/autoLabeling/api_test/pkl/model_final_f6e8b1.pkl"
