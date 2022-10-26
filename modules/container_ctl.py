@@ -13,7 +13,8 @@ def get_port_usage():
     ports_in_use = {}
     for i in client.containers.list():
         container = client.containers.get(i.id)
-        ports_in_use[str(i.name)] = list(container.ports.items())[0][-1][0]["HostPort"]
+        if len(container.ports) == 0: pass
+        else:ports_in_use[str(i.name)] = list(container.ports.items())[0][-1][0]["HostPort"]
     return ports_in_use
 
 def stop_container(name):
@@ -30,7 +31,7 @@ def rm_container(name):
         if name == container_name :
             i.remove()
             
-def trainserver_start(dataset_path,labeling_type,project_name):
+def trainserver_start(dataset_path,labeling_type,project_name,device_id):
     client = docker.from_env()
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:t-v0.1',
@@ -38,7 +39,7 @@ def trainserver_start(dataset_path,labeling_type,project_name):
     detach=True,
     runtime="nvidia",
     device_requests=[
-        docker.types.DeviceRequest(device_ids=["0","1"], capabilities=[["gpu"]])
+        docker.types.DeviceRequest(device_ids=[str(device_id)], capabilities=[["gpu"]])
     ],
     volumes = {'/home/tbelldev/workspace/autoLabeling/api_test/tool':{'bind':"/workspace/src",'mode':"rw"},
                dataset_path:{"bind":"/workspace/dataset","mode":"rw"},
@@ -52,7 +53,7 @@ def trainserver_start(dataset_path,labeling_type,project_name):
     
     return container
 
-def inference_server_start(model_repo_path,port,project_name):
+def inference_server_start(model_repo_path,port,project_name,device_id):
     client = docker.from_env()
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:i-v0.1',
@@ -60,7 +61,7 @@ def inference_server_start(model_repo_path,port,project_name):
     detach=True,
     runtime="nvidia",
     device_requests=[
-        docker.types.DeviceRequest(device_ids=["0"], capabilities=[["gpu"]])
+        docker.types.DeviceRequest(device_ids=[str(device_id)], capabilities=[["gpu"]])
     ],
     ports = {'8000/tcp': port},
     shm_size ="1G",
