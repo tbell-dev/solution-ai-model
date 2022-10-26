@@ -31,7 +31,7 @@ def rm_container(name):
         if name == container_name :
             i.remove()
             
-def trainserver_start(dataset_path,labeling_type,project_name,device_id):
+def trainserver_start(dataset_path,host_model_repo,labeling_type,project_name,device_id):
     client = docker.from_env()
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:t-v0.1',
@@ -47,7 +47,7 @@ def trainserver_start(dataset_path,labeling_type,project_name,device_id):
                },
     command = f"conda run --no-capture-output -n detectron2 \
                 python src/train_container.py \
-                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name}",
+                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name} --ouput_host {host_model_repo}",
     remove = True
     )
     
