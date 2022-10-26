@@ -166,6 +166,7 @@ def parse_args():
     parser.add_argument('--project_name', type=str ,default="0",required=True)
     parser.add_argument('--labeling_type', type=str ,default="bbox", required=True)
     parser.add_argument('--split',  type=float ,default=0.7)
+    parser.add_argument('--ouput_host',help="root model repo output on host", type=str,required=True,default="/home/tbelldev/workspace/autoLabeling/api_test/model_repo/")
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -175,6 +176,16 @@ if __name__ == '__main__':
     labeling_type = args.labeling_type
     project_name = args.project_name
     v = args.split
-    
+    host_path = args.ouput_host
+    file_name_prefix = ""
     train = trainer(dataset_dir,project_name,labeling_type,v=0.7,op="cp")
     cfg = train.start()
+    
+    cfg.MODEL.WEIGHTS = host_path+cfg.OUTPUT_DIR.split("/")[-1]+"/model_final.pth"
+    if labeling_type == "bbox" : file_name_prefix = "faster_rcnn_R_101_FPN_3x"
+    if labeling_type == "polygon" : file_name_prefix = "mask_rcnn_R_101_FPN_3x"
+    with open(cfg.OUTPUT_DIR+"/"+file_name_prefix+"_"+project_name+".yaml", "w") as f: 
+        
+        cfg.OUTPUT_DIR = host_path+cfg.OUTPUT_DIR.split("/")[-1]
+        f.write(cfg.dump())
+    
