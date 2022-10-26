@@ -10,6 +10,8 @@ AI core 아키텍쳐
 데이터 증강 프로세스
 ![](img/data_aug_process.PNG)
 
+docker hub [URL](https://hub.docker.com/repository/docker/tbelldev/sslo-ai)
+
 ## version compatibility
 
 ```sh
