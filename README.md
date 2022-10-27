@@ -10,6 +10,12 @@ AI core 아키텍쳐
 데이터 증강 프로세스
 ![](img/data_aug_process.PNG)
 
+## Docker Images
+docker hub URL [here](https://hub.docker.com/repository/docker/tbelldev/sslo-ai)
+```sh
+t-v0.1 / t-v0.2 : container for active learning
+i-v0.1 : container for inference(auto-labeling) 
+```
 ## version compatibility
 
 ```sh
@@ -25,7 +31,7 @@ detectron2(v0.6)
 triton server(2.12.0)
 ```
 
-## pytorch & detectron installation
+## pytorch & detectron installation info(Don't need to install)
 ### pytorch
 ```sh
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
