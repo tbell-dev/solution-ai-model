@@ -19,7 +19,6 @@ from pycocotools.coco import COCO
 import argparse
 import os
 from typing import Dict, List, Tuple
-import torch
 from torch import Tensor, nn
 
 import detectron2.data.transforms as T
