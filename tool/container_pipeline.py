@@ -142,15 +142,6 @@ def model_export_to_ts(cfg,sample_image,ouput_dir):
     PathManager.mkdirs(ouput_dir)
     torch._C._jit_set_bailout_depth(1)
 
-    # cfg = setup_cfg(args)
-    # cfg = get_cfg()
-    # # cuda context is initialized before creating dataloader, so we don't fork anymore
-    # cfg.DATALOADER.NUM_WORKERS = 0
-    # add_pointrend_config(cfg)
-    # cfg.merge_from_file(cfg_file)
-    # cfg.merge_from_list([])
-    # cfg.freeze()
-
     # create a torch model
     torch_model = build_model(cfg)
     DetectionCheckpointer(torch_model).resume_or_load(cfg.MODEL.WEIGHTS)
@@ -174,10 +165,13 @@ def get_loss(metric_path):
 
     return json_data[-1]
 
-def model_validation(model_repo,current_prj_name):
+def model_validation(cfg,current_prj_name):
+    model_repo = "/".join(cfg.OUTPUT_DIR.split("/")[:-1])
     prjs = [i for i in glob(model_repo+"/*") if current_prj_name in i.split("/")[-1]]
     if len(prjs) == 1 : 
         return prjs[0]+"/model_final.pth"
+    elif len(prjs) == 0 :
+        return model_repo+"/model_final.pth"
     else:
         latest_result = prjs[-1]
         previous_result = prjs[:-1]
@@ -328,7 +322,10 @@ class trainer:
             same_prjs = [i for i in glob(model_repo+'/*') if self.project_name in i.split("/")[-1]]
             self.cfg.OUTPUT_DIR = "/workspace/output/"+self.project_name+"_"+str(len(same_prjs))
             os.makedirs(self.cfg.OUTPUT_DIR)
-        else: os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+            
+        else: 
+            os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+            
         trainer = DefaultTrainer(self.cfg)
         trainer.resume_or_load(resume=False)
         trainer.train()
@@ -371,7 +368,7 @@ def parse_args():
     parser.add_argument('--project_name', type=str ,default="0",required=True)
     parser.add_argument('--labeling_type', type=str ,default="bbox", required=True)
     parser.add_argument('--split',  type=float ,default=0.7)
-    parser.add_argument('--outputdir',  type=str ,default="/workspace/models/") # mounted with '{project_root}/models' on host
+    # parser.add_argument('--outputdir',  type=str ,default="/workspace/models/") # mounted with '{project_root}/models' on host
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -385,9 +382,12 @@ if __name__ == '__main__':
     train = trainer(dataset_dir,project_name,labeling_type,v=0.7,op="cp")
     cfg = train.start()
     
-    # weight_path = model_validation(project_name,cfg.OUTPUT_DIR.split("/")[:-2])
-    # if weight_path.split("/")[-2] == cfg.OUTPUT_DIR:
-    sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
-    if labeling_type == "bbox": task_type = "od"
-    if labeling_type == "ploygon": task_type = "seg"
-    configure_model_dir(task_type,cfg,sample_image,output_dir_name = cfg.OUTPUT_DIR.split("/")[-1])
+    weight_path = model_validation(cfg,project_name)
+    print(weight_path)
+    if "/".join(weight_path.split("/")[:-1]) == cfg.OUTPUT_DIR:
+        cfg.MODEL.WEIGHTS = weight_path
+        sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
+        if labeling_type == "bbox": task_type = "od"
+        if labeling_type == "ploygon": task_type = "seg"
+        configure_model_dir(task_type,cfg,sample_image,output_dir_name = cfg.OUTPUT_DIR.split("/")[-1])
+        

@@ -31,10 +31,10 @@ def rm_container(name):
         if name == container_name :
             i.remove()
             
-def trainserver_start(dataset_path,host_model_repo,labeling_type,project_name,device_id):
+def trainserver_start(dataset_path,model_repo,labeling_type,project_name,device_id):
     client = docker.from_env()
     container = client.containers.run(
-    image = 'tbelldev/sslo-ai:t-v0.1',
+    image = 'tbelldev/sslo-ai:t-v0.2',
     name = "trainserver_"+str(project_name),
     detach=True,
     runtime="nvidia",
@@ -43,21 +43,22 @@ def trainserver_start(dataset_path,host_model_repo,labeling_type,project_name,de
     ],
     volumes = {'/home/tbelldev/workspace/autoLabeling/api_test/tool':{'bind':"/workspace/src",'mode':"rw"},
                dataset_path:{"bind":"/workspace/dataset","mode":"rw"},
+               model_repo:{"bind":"/workspace/models","mode":"rw"},
                "/home/tbelldev/workspace/autoLabeling/api_test/model_repo":{"bind":"/workspace/output","mode":"rw"}
                },
     command = f"conda run --no-capture-output -n detectron2 \
-                python src/train_container.py \
-                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name} --ouput_host {host_model_repo}",
+                python src/container_pipeline.py \
+                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name}", #--ouput_host {host_model_repo}
     remove = True
     )
     
     return container
 
-def inference_server_start(model_repo_path,port,project_name,device_id):
+def inference_server_start(model_repo_path,port,container_cnt,device_id):
     client = docker.from_env()
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:i-v0.1',
-    name = "inference_server_"+str(project_name),
+    name = "inference_server_"+str(container_cnt),
     detach=True,
     runtime="nvidia",
     device_requests=[
