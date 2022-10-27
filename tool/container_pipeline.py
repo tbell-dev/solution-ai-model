@@ -273,12 +273,12 @@ def spliter(augmented_dir,v = 0.7, op = "cp"):
     return train_coco["categories"]
 
 class trainer:
-    def __init__(self,augmentated_dir,project_name,labeling_type = "seg",v=0.7,op="cp"):
+    def __init__(self,augmentated_dir,project_name,labeling_type = "bbox",v=0.7,op="cp"):
         self.output_dir = augmentated_dir
         self.v = v
         self.project_name = str(project_name)
         self.cfg = None
-        self.task_type = labeling_type
+        self.labeling_type = labeling_type
         self.train_path = self.output_dir+"/train/"
         self.val_path = self.output_dir+"/val/"
         self.cats = spliter(self.output_dir,v=self.v,op=op)
@@ -296,9 +296,9 @@ class trainer:
         cfg = get_cfg()
         
         model_pth = ""
-        if self.task_type == 'bbox':
+        if self.labeling_type == 'bbox':
             model_pth = "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
-        elif self.task_type == 'seg':
+        elif self.labeling_type == 'polygon':
              model_pth = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"
              
         cfg.merge_from_file(model_zoo.get_config_file(model_pth))
@@ -350,12 +350,10 @@ def configure_model_dir(task_type,cfg,sample_image,output_dir_name):
         shutil.copytree(DEFAULT_MODEL_PATH+"infer_pipeline",DEFAULT_MODEL_PATH+"infer_pipeline_"+output_dir_name)
         with open(DEFAULT_MODEL_PATH+"infer_pipeline_"+output_dir_name+'/config.pbtxt') as f:
             txt = f.read()
-            with open(DEFAULT_MODEL_PATH+"infer_pipeline_"+output_dir_name+'/config.pbtxt') as f:
-                txt = f.read()
-        if 'mask_rcnn' in txt :
-            new_txt = txt.replace('mask_rcnn',output_dir_name)
-            with open(DEFAULT_MODEL_PATH+"infer_pipeline_"+output_dir_name+'/config.pbtxt',"w") as f:
-                f.write(new_txt)
+        
+        new_txt = txt.replace('mask_rcnn',output_dir_name)
+        with open(DEFAULT_MODEL_PATH+"infer_pipeline_"+output_dir_name+'/config.pbtxt',"w") as f:
+            f.write(new_txt)
                 
     elif task_type == "od":
         shutil.copy(DEFAULT_MODEL_PATH+"faster_rcnn/config.pbtxt",DEFAULT_MODEL_PATH+output_dir_name+"/config.pbtxt" )
@@ -379,15 +377,14 @@ if __name__ == '__main__':
     project_name = args.project_name
     v = args.split
     task_type = "od"
-    train = trainer(dataset_dir,project_name,labeling_type,v=0.7,op="cp")
+    train = trainer(dataset_dir,project_name,labeling_type,v=0.8,op="cp")
     cfg = train.start()
     
     weight_path = model_validation(cfg,project_name)
-    print(weight_path)
     if "/".join(weight_path.split("/")[:-1]) == cfg.OUTPUT_DIR:
         cfg.MODEL.WEIGHTS = weight_path
         sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
         if labeling_type == "bbox": task_type = "od"
-        if labeling_type == "ploygon": task_type = "seg"
+        if labeling_type == "polygon": task_type = "seg"
         configure_model_dir(task_type,cfg,sample_image,output_dir_name = cfg.OUTPUT_DIR.split("/")[-1])
         
