@@ -10,8 +10,12 @@ AI core 아키텍쳐
 데이터 증강 프로세스
 ![](img/data_aug_process.PNG)
 
-docker hub [URL](https://hub.docker.com/repository/docker/tbelldev/sslo-ai)
-
+## Docker Images
+docker hub URL [here](https://hub.docker.com/repository/docker/tbelldev/sslo-ai)
+```sh
+t-v0.1 / t-v0.2 : container for active learning
+i-v0.1 : container for inference(auto-labeling) 
+```
 ## version compatibility
 
 ```sh
