@@ -1,4 +1,4 @@
-import docker
+import docker , os
 
 def get_container_list():
     name_list = []
@@ -31,8 +31,9 @@ def rm_container(name):
         if name == container_name :
             i.remove()
             
-def trainserver_start(dataset_path,model_repo,labeling_type,project_name,device_id):
+def trainserver_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id):
     client = docker.from_env()
+    pwd = os.getcwd()
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:t-v0.2',
     name = "trainserver_"+str(project_name),
@@ -41,10 +42,10 @@ def trainserver_start(dataset_path,model_repo,labeling_type,project_name,device_
     device_requests=[
         docker.types.DeviceRequest(device_ids=[str(device_id)], capabilities=[["gpu"]])
     ],
-    volumes = {'/home/tbelldev/workspace/autoLabeling/api_test/tool':{'bind':"/workspace/src",'mode':"rw"},
+    volumes = {os.getcwd()+'/tool':{'bind':"/workspace/src",'mode':"rw"},
                dataset_path:{"bind":"/workspace/dataset","mode":"rw"},
-               model_repo:{"bind":"/workspace/models","mode":"rw"},
-               "/home/tbelldev/workspace/autoLabeling/api_test/model_repo":{"bind":"/workspace/output","mode":"rw"}
+               servable_model_repo:{"bind":"/workspace/models","mode":"rw"}, 
+               model_repo:{"bind":"/workspace/output","mode":"rw"} 
                },
     command = f"conda run --no-capture-output -n detectron2 \
                 python src/container_pipeline.py \
@@ -54,6 +55,7 @@ def trainserver_start(dataset_path,model_repo,labeling_type,project_name,device_
     
     return container
 
+# 10초 마다 한번 씩 servable model repository에 변경사항을 모니터링하여 모델 load / unload 수행 --> 특별한 메뉴얼 조치없이 초기 실행 이후 계속 실행
 def inference_server_start(model_repo_path,port,container_cnt,device_id):
     client = docker.from_env()
     container = client.containers.run(
@@ -65,7 +67,7 @@ def inference_server_start(model_repo_path,port,container_cnt,device_id):
         docker.types.DeviceRequest(device_ids=[str(device_id)], capabilities=[["gpu"]])
     ],
     ports = {'8000/tcp': port},
-    shm_size ="1G",
+    shm_size ="30G",
     volumes = {model_repo_path:{'bind':"/models",'mode':"rw"}},
     command = "tritonserver --model-repository=/models --model-control-mode=poll --repository-poll-secs=10",
     remove = True
