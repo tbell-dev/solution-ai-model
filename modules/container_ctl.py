@@ -67,7 +67,7 @@ def inference_server_start(model_repo_path,port,container_cnt,device_id):
     ports = {'8000/tcp': port},
     shm_size ="1G",
     volumes = {model_repo_path:{'bind':"/models",'mode':"rw"}},
-    command = "tritonserver --model-repository=/models --model-control-mode=poll --repository-poll-secs=5",
+    command = "tritonserver --model-repository=/models --model-control-mode=poll --repository-poll-secs=10",
     remove = True
     )
     
