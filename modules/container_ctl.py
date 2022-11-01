@@ -1,6 +1,8 @@
 import docker , os
 import subprocess
 import json
+import tritonclient.http as httpclient
+from tritonclient.utils import InferenceServerException
 
 DEFAULT_ATTRIBUTES = (
     'index',
@@ -78,6 +80,13 @@ def get_gpu_proc(nvidia_smi_path='nvidia-smi'):
                 elif j == 6 : result["GPU_Memory_Usage"] = process_refine[i][j]
             result_list.append(result)
         return result_list
+
+def get_model_info(model_name,url = "localhost",port = 8000):
+    triton_client = httpclient.InferenceServerClient(url= url+":"+str(port), verbose=False)
+    models_state = triton_client.get_model_repository_index()
+    for status in models_state:
+        if status["name"] == model_name :
+            return status
             
 def trainserver_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id):
     client = docker.from_env()
