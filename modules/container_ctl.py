@@ -2,6 +2,18 @@ import docker , os
 import subprocess
 import json
 
+DEFAULT_ATTRIBUTES = (
+    'index',
+    'uuid',
+    'name',
+    'timestamp',
+    'memory.total',
+    'memory.free',
+    'memory.used',
+    'utilization.gpu',
+    'utilization.memory'
+)
+
 def get_container_list():
     name_list = []
     client = docker.from_env()
@@ -33,12 +45,20 @@ def rm_container(name):
         if name == container_name :
             i.remove()
             
+def get_gpu_info(nvidia_smi_path='nvidia-smi', keys=DEFAULT_ATTRIBUTES, no_units=True):
+    nu_opt = '' if not no_units else ',nounits'
+    cmd = '%s --query-gpu=%s --format=csv,noheader%s' % (nvidia_smi_path, ','.join(keys), nu_opt)
+    output = subprocess.check_output(cmd, shell=True)
+    lines = output.decode().split('\n')
+    lines = [ line.strip() for line in lines if line.strip() != '' ]
+
+    return [ { k: v for k, v in zip(keys, line.split(', ')) } for line in lines ]
+            
 def get_gpu_proc(nvidia_smi_path='nvidia-smi'):
     result_list = []
     
     cmd = '%s' % (nvidia_smi_path)
     output = subprocess.check_output(cmd, shell=True)
-    # print(output2)
     lines = output.decode().split('\n')
     lines = [ line.strip() for line in lines if line.strip() != '' ]
     for i in range(len(lines)):
