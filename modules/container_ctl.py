@@ -3,6 +3,7 @@ import subprocess
 import json
 import tritonclient.http as httpclient
 from tritonclient.utils import InferenceServerException
+from glob import glob
 
 DEFAULT_ATTRIBUTES = (
     'index',
@@ -47,6 +48,38 @@ def rm_container(name):
         if name == container_name :
             i.remove()
             
+def get_current_learning_status(project_name,model_repository):
+    result = {"project_name":"","learn_iteration":"","status":"","eta_sec":""}
+    prjs = [i for i in glob(model_repository+"/*") if project_name in i.split("/")[-1]]
+    if "_" in prjs[-1].split("/")[-1]:
+        latest_iter = str(prjs[-1].split("/")[-1].split("_")[-1])
+    else : 
+        latest_iter = "0"
+    for i in range(len(prjs)):
+        if ("model_final.pth" not in [i.split("/")[-1] for i in glob(prjs[i] + "/*")]) and project_name not in [i.split("_")[-1] for i in get_container_list()]:
+            result["project_name"] = project_name
+            result["learn_iteration"] = latest_iter
+            result["status"] = "Failed"
+            result["eta_sec"] = "0"
+        elif ("model_final.pth" in [i.split("/")[-1] for i in glob(prjs[i] + "/*")]) and project_name not in [i.split("_")[-1] for i in get_container_list()]:
+            result["project_name"] = project_name
+            result["learn_iteration"] = latest_iter
+            result["status"] = "Success"
+            result["eta_sec"] = "0"
+        elif ("model_final.pth" not in [i.split("/")[-1] for i in glob(prjs[i] + "/*")]) and project_name in [i.split("_")[-1] for i in get_container_list()]:
+            result["project_name"] = project_name
+            result["learn_iteration"] = latest_iter
+            result["status"] = "Running"
+            metric_path = os.path.join(prjs[i] + "/","metrics.json")
+            f = open(metric_path, 'r')
+            lines = f.readlines()
+            json_data = []
+            for line in lines:
+                json_ins = json.loads(line)
+                json_data.append(json_ins)
+            result["eta_sec"] = str(int(json_data[-1]["eta_seconds"]))
+    return result
+            
 def get_gpu_info(nvidia_smi_path='nvidia-smi', keys=DEFAULT_ATTRIBUTES, no_units=True):
     nu_opt = '' if not no_units else ',nounits'
     cmd = '%s --query-gpu=%s --format=csv,noheader%s' % (nvidia_smi_path, ','.join(keys), nu_opt)
@@ -88,7 +121,7 @@ def get_model_info(model_name,url = "localhost",port = 8000):
         if status["name"] == model_name :
             return status
             
-def trainserver_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id):
+def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id):
     client = docker.from_env()
     pwd = os.getcwd()
     container = client.containers.run(
