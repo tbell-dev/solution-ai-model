@@ -2,7 +2,7 @@ from tool.augmentation import augmentator
 # from tool.train import trainer
 import argparse
 # import docker
-from modules.container_ctl import trainserver_start, get_container_list
+from modules.container_ctl import train_server_start, get_container_list
 
 class activeLearning:
     """
@@ -27,17 +27,18 @@ class activeLearning:
                  model_repository,
                  device_id):
                 
-        self.dataset_path = dataset_dir 
-        self.aug_dataset_path = self.dataset_path + "/augmented/" 
-        self.project_name = project_name 
-        self.labeling_type = labeling_type 
+        self.dataset_path = str(dataset_dir)+"/" 
+        self.aug_dataset_path = str(self.dataset_path) + "/augmented/" 
+        self.project_name = str(project_name) 
+        self.labeling_type = str(labeling_type)
+        
         if self.labeling_type == "bbox": self.task_type = "od"
         elif self.labeling_type == "polygon": self.task_type = "seg"
-        self.v = split 
-        self.iter = aug_iter 
-        self.model_repository = model_repository 
-        self.servable_model_path = servable_model_path         
-        self.device_id = int(device_id) 
+        self.v = float(str(split))
+        self.iter = int(aug_iter)
+        self.model_repository = str(model_repository)
+        self.servable_model_path = str(servable_model_path)
+        self.device_id = int(device_id)
         self.activate()
         
     def activate_aug(self):
@@ -48,7 +49,7 @@ class activeLearning:
         
     def activate_train_validation_export(self):
         
-        trainserver_start(self.aug_dataset_path,
+        train_server_start(self.aug_dataset_path,
                           self.model_repository,
                           self.servable_model_path,
                           self.labeling_type,
