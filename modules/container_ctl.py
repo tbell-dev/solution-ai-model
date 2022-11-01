@@ -1,4 +1,6 @@
 import docker , os
+import subprocess
+import json
 
 def get_container_list():
     name_list = []
@@ -30,6 +32,32 @@ def rm_container(name):
         container_name = i.name
         if name == container_name :
             i.remove()
+            
+def get_gpu_proc(nvidia_smi_path='nvidia-smi'):
+    result_list = []
+    
+    cmd = '%s' % (nvidia_smi_path)
+    output = subprocess.check_output(cmd, shell=True)
+    # print(output2)
+    lines = output.decode().split('\n')
+    lines = [ line.strip() for line in lines if line.strip() != '' ]
+    for i in range(len(lines)):
+        if "GPU   GI   CI" in lines[i]:
+            proc_info_index = i
+    proc_lines = lines[proc_info_index:-1]
+    if "No running processes found" in proc_lines[-1]: 
+        return result
+    else:
+        processes = [proc_lines[3:][i].replace(" ","_").strip("|") for i in range(len(proc_lines[3:]))]
+        process_refine = [list(filter(None,process.split("_"))) for process in processes]
+        for i in range(len(process_refine)):
+            result = {"GPU_ID":'',"Process_name":'',"GPU_Memory_Usage":''}
+            for j in range(len(process_refine[i])):          
+                if j == 0 : result["GPU_ID"] = process_refine[i][j]
+                elif j == 5 : result["Process_name"] = process_refine[i][j]
+                elif j == 6 : result["GPU_Memory_Usage"] = process_refine[i][j]
+            result_list.append(result)
+        return result_list
             
 def trainserver_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id):
     client = docker.from_env()
