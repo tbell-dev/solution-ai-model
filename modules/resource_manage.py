@@ -48,6 +48,47 @@ def get_current_learning_status(project_name,model_repository):
                 json_data.append(json_ins)
             result["eta_sec"] = str(int(json_data[-1]["eta_seconds"]))
     return result
+
+def get_model_state(learning_status_result,servable_model_repo):
+    result={"model_name":"","state":""}
+    if learning_status_result["status"] == "Success":
+        if learning_status_result["learn_iteration"] == str(0):
+            if learning_status_result["project_name"] in [i.split("/")[-1] for i in glob(servable_model_repo+"/*")]:
+                result["model_name"] = learning_status_result["project_name"]
+                result["state"] = "READY" 
+            else:
+                if learning_status_result["project_name"] not in get_container_list():
+                    result["model_name"] = learning_status_result["project_name"]
+                    result["state"] = "Failed"
+                else:    
+                    result["model_name"] = learning_status_result["project_name"]
+                    result["state"] = "PROCESSING"
+        else:
+            if learning_status_result["project_name"]+"_"+learning_status_result["learn_iteration"] == any([i.split("/")[-1] for i in glob(servable_model_repo+"/*")]):
+                result["model_name"] = learning_status_result["project_name"]+"_"+learning_status_result["learn_iteration"]
+                result["state"] = "READY"
+            else :
+                if learning_status_result["project_name"] not in get_container_list():
+                    result["model_name"] = learning_status_result["project_name"]+"_"+learning_status_result["learn_iteration"]
+                    result["state"] = "Failed"
+                else:
+                    result["model_name"] = learning_status_result["project_name"]+"_"+learning_status_result["learn_iteration"]
+                    result["state"] = "PROCESSING"
+        
+    elif learning_status_result["status"] == "Running":
+        if learning_status_result["learn_iteration"] == str(0):
+            result["model_name"] = learning_status_result["project_name"]
+        else:
+            result["model_name"] = learning_status_result["project_name"]+"_"+learning_status_result["learn_iteration"]
+        result["state"] = "PROCESSING"
+    elif learning_status_result["status"] == "Failed":
+        if learning_status_result["learn_iteration"] == str(0):
+            result["model_name"] = learning_status_result["project_name"]
+        else:
+            result["model_name"] = learning_status_result["project_name"]+"_"+learning_status_result["learn_iteration"]
+        result["state"] = "Failed"
+        
+    return result
             
 def get_gpu_info(nvidia_smi_path='nvidia-smi', keys=DEFAULT_ATTRIBUTES, no_units=True):
     nu_opt = '' if not no_units else ',nounits'
