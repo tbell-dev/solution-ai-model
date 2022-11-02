@@ -21,11 +21,12 @@ class activeLearning:
                  dataset_dir,
                  project_name,
                  labeling_type,
-                 split,
-                 aug_iter,
                  servable_model_path,
                  model_repository,
-                 device_id):
+                 split = 0.7,
+                 aug_iter = 10,
+                 device_id = 1,
+                 base_url = 'tcp://192.168.0.2:2375'):
                 
         self.dataset_path = str(dataset_dir)+"/" 
         self.aug_dataset_path = str(self.dataset_path) + "/augmented/" 
@@ -39,6 +40,7 @@ class activeLearning:
         self.model_repository = str(model_repository)
         self.servable_model_path = str(servable_model_path)
         self.device_id = int(device_id)
+        self.base_url = base_url
         self.activate()
         
     def activate_aug(self):
@@ -50,11 +52,12 @@ class activeLearning:
     def activate_train_validation_export(self):
         
         train_server_start(self.aug_dataset_path,
-                          self.model_repository,
+                          self.model_repository, 
                           self.servable_model_path,
                           self.labeling_type,
                           self.project_name,
-                          self.device_id)
+                          self.device_id,
+                          base_url = self.base_url)
     def activate(self):
         self.activate_aug()
         self.activate_train_validation_export()
