@@ -90,13 +90,13 @@ def get_model_info(model_name,url = "localhost",port = 8000):
         if status["name"] == model_name :
             return status
         
-def is_gpu_trainable(device_id = 1):
+def is_gpu_trainable(device_id = 1,fraction = 0.5):
     gpu_mem_usage_total = 0
     is_trainable = False
     for proc in get_gpu_proc():
         if proc["GPU_ID"] == str(device_id):
             gpu_mem_usage_total += int(proc["GPU_Memory_Usage"].strip("MiB"))
     total_mem = [info['memory.total'] for info in get_gpu_info() if info['index'] == str(device_id)][0]
-    if int(total_mem/2) <= (total_mem - gpu_mem_usage_total) : is_trainable = True
+    if int(total_mem*fraction) <= (total_mem - gpu_mem_usage_total) : is_trainable = True
     else: is_trainable = False
     return is_trainable
