@@ -16,6 +16,7 @@ class activeLearning:
     self.servable_model_path # 학습 컨테이너에 마운팅 되어 컨테이너에서 모든 프로세스가 끝난 후 
                                inference 될수있는 형태로 변환 된 모델 저장소의 경로
     self.device_id # 학습 시 지정할 GPU 디바이스 아이디 (0,1)
+    self.base_url  # 컨테이너를 띄울 호스트 서버 주소:도커 데몬 포트
     """
     def __init__(self,
                  dataset_dir,
