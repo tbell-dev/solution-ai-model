@@ -105,6 +105,15 @@ def is_gpu_trainable(device_id = 1,fraction = 0.5):
     else: is_trainable = False
     return is_trainable
 
+def get_free_gpu_mem(device_id = 1):
+    gpu_mem_usage_total = 0
+    is_trainable = False
+    for proc in get_gpu_proc():
+        if proc["GPU_ID"] == str(device_id):
+            gpu_mem_usage_total += int(proc["GPU_Memory_Usage"].strip("MiB"))
+    total_mem = [info['memory.total'] for info in get_gpu_info() if info['index'] == str(device_id)][0]
+    return (total_mem - gpu_mem_usage_total) 
+
 def model_ctl(ctl,model_name,host= "localhost",port = 8000):
     triton_client = httpclient.InferenceServerClient(url=host+":"+str(port), verbose=False)
     if ctl == "load":
