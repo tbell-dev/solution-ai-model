@@ -1,15 +1,18 @@
 import docker , os
+from glob import glob
 
-def get_container_list():
+def get_container_list(base_url = 'tcp://192.168.0.2:2375'):
     name_list = []
-    client = docker.from_env()
+    # client = docker.from_env()
+    client = docker.DockerClient(base_url=base_url)
     for i in client.containers.list():
         name = i.name
         name_list.append(name)
     return name_list
 
-def get_port_usage():
-    client = docker.from_env()
+def get_port_usage(base_url = 'tcp://192.168.0.2:2375'):
+    # client = docker.from_env()
+    client = docker.DockerClient(base_url=base_url)
     ports_in_use = {}
     for i in client.containers.list():
         container = client.containers.get(i.id)
@@ -17,23 +20,25 @@ def get_port_usage():
         else:ports_in_use[str(i.name)] = list(container.ports.items())[0][-1][0]["HostPort"]
     return ports_in_use
 
-def stop_container(name):
-    client = docker.from_env()
+def stop_container(name,base_url = 'tcp://192.168.0.2:2375'):
+    # client = docker.from_env()
+    client = docker.DockerClient(base_url=base_url)
     for i in client.containers.list():
         container_name = i.name
         if name == container_name :
             i.stop()
 
-def rm_container(name):
-    client = docker.from_env()
+def rm_container(name,base_url = 'tcp://192.168.0.2:2375'):
+    # client = docker.from_env()
+    client = docker.DockerClient(base_url=base_url)
     for i in client.containers.list():
         container_name = i.name
         if name == container_name :
             i.remove()
             
-def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id):
-    client = docker.from_env()
-    pwd = os.getcwd()
+def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id,base_url = 'tcp://192.168.0.2:2375'):
+    # client = docker.from_env()
+    client = docker.DockerClient(base_url=base_url)
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:t-v0.2',
     name = "trainserver_"+str(project_name),
@@ -55,12 +60,15 @@ def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type
     
     return container
 
-# 10초 마다 한번 씩 servable model repository에 변경사항을 모니터링하여 모델 load / unload 수행 --> 특별한 메뉴얼 조치없이 초기 실행 이후 계속 실행
-def inference_server_start(model_repo_path,port,container_cnt,device_id):
-    client = docker.from_env()
+def inference_server_start(model_repo_path,port,device_id = 0,mode = "explicit",base_url = 'tcp://192.168.0.2:2375'):
+    # client = docker.from_env()
+    client = docker.DockerClient(base_url=base_url)
+    option = ""
+    if mode == "poll":
+        option = " --repository-poll-secs=10"
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:i-v0.1',
-    name = "inference_server_"+str(container_cnt),
+    name = "inference_server_"+str(len(get_container_list(base_url))),
     detach=True,
     runtime="nvidia",
     device_requests=[
@@ -69,9 +77,8 @@ def inference_server_start(model_repo_path,port,container_cnt,device_id):
     ports = {'8000/tcp': port},
     shm_size ="30G",
     volumes = {model_repo_path:{'bind':"/models",'mode':"rw"}},
-    command = "tritonserver --model-repository=/models --model-control-mode=poll --repository-poll-secs=10",
+    command = f"tritonserver --model-repository=/models --model-control-mode={mode}"+option,
     remove = True
     )
-    
     return container
 
