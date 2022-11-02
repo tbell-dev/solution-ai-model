@@ -41,7 +41,7 @@ def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type
     client = docker.DockerClient(base_url=base_url)
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:t-v0.2',
-    name = "trainserver_"+str(project_name),
+    name = "train_server_"+str(project_name),
     detach=True,
     runtime="nvidia",
     device_requests=[
