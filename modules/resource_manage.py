@@ -83,12 +83,16 @@ def get_gpu_proc(nvidia_smi_path='nvidia-smi'):
             result_list.append(result)
         return result_list
 
-def get_model_info(model_name,url = "localhost",port = 8000):
+def get_model_info(model_name = "all",url = "localhost",port = 8000):
     triton_client = httpclient.InferenceServerClient(url= url+":"+str(port), verbose=False)
     models_state = triton_client.get_model_repository_index()
-    for status in models_state:
-        if status["name"] == model_name :
-            return status
+    result = []
+    if model_name == "all":
+        return models_state
+    else:    
+        for status in models_state:
+            if status["name"] == model_name :
+                return status
         
 def is_gpu_trainable(device_id = 1,fraction = 0.5):
     gpu_mem_usage_total = 0
@@ -100,3 +104,12 @@ def is_gpu_trainable(device_id = 1,fraction = 0.5):
     if int(total_mem*fraction) <= (total_mem - gpu_mem_usage_total) : is_trainable = True
     else: is_trainable = False
     return is_trainable
+
+def model_ctl(ctl,model_name,host= "localhost",port = 8000):
+    triton_client = httpclient.InferenceServerClient(url=host+":"+str(port), verbose=False)
+    if ctl == "load":
+        triton_client.load_model(model_name)
+    if ctl == "unload":
+        triton_client.unload_model(model_name)
+    
+    return [stats for stats in triton_client.get_model_repository_index() if stats["name"] == model_name][0]
