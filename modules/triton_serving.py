@@ -85,9 +85,9 @@ def client_v2(image_file, model_name,task_type,port=8000, host = "localhost",pri
     return outputs
     
 def get_key_from_value(dict,value):
-   return [k for k, v in dict.items() if v == value]
+   return [k for k, v in dict.items() if v in value]
 
-def infer_result_filter(pred,task_type,score:float,class_name:str):
+def infer_result_filter(pred,task_type,score:float,class_name:list):
     # get filtered index
     idx_list, new_pred = [], {}
     
@@ -96,7 +96,7 @@ def infer_result_filter(pred,task_type,score:float,class_name:str):
         
     if task_type == "seg":
         for i in range(len(pred[list(pred.keys())[0]])):
-            if pred[list(pred.keys())[0]][i] >= score and pred[list(pred.keys())[2]][i] == get_key_from_value(COCO_NAMES,class_name)[0]:
+            if pred[list(pred.keys())[0]][i] >= score and pred[list(pred.keys())[2]][i] in get_key_from_value(COCO_NAMES,class_name)[0]:
                 idx_list.append(i)
             
         # filter result
@@ -108,7 +108,7 @@ def infer_result_filter(pred,task_type,score:float,class_name:str):
                 
     elif task_type == "od":
         for i in range(len(pred[list(pred.keys())[2]])):
-            if pred[list(pred.keys())[2]][i] >= score and pred[list(pred.keys())[1]][i] == get_key_from_value(COCO_NAMES,class_name)[0]:
+            if pred[list(pred.keys())[2]][i] >= score and pred[list(pred.keys())[1]][i] in get_key_from_value(COCO_NAMES,class_name)[0]:
                 idx_list.append(i)
             
         # filter result
