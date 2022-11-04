@@ -42,7 +42,7 @@ def create_coco_dict_seg(image,segmentations,bbox,id,idx):
     
     return json_data
 
-def create_coco_dict_seg_v2(image,mask,bbox,id,idx):
+def create_coco_dict_seg_v2(image,mask,bbox,id,idx,score):
     '''
     only creates coco dataset annotation field 
     '''
@@ -86,12 +86,13 @@ def create_coco_dict_seg_v2(image,mask,bbox,id,idx):
                         'iscrowd':0,
                         'bbox': [xmin,ymin,width,height],
                         "category_id": id,
-                        "id": idx
+                        "id": idx,
+                        'score':score
                         }
     
     return data
 
-def create_coco_dict_od(bbox,id,idx):
+def create_coco_dict_od(bbox,id,idx,score):
     '''
     only creates coco dataset annotation field 
     '''
@@ -110,7 +111,8 @@ def create_coco_dict_od(bbox,id,idx):
             'bbox':  list(map(int,bbox.tolist())),
             'area': width * height,
             'segmentation': [],
-            'iscrowd':0
+            'iscrowd':0,
+            'score':score
             }
     return data
     
@@ -121,11 +123,11 @@ def coco_format_inverter(result):
     if "MASKS" in list(result.keys()):
         for i in range(len(result["MASKS"])):
             binary_mask = np.where(result["MASKS"][i] > 0,255,0)
-            data = create_coco_dict_seg_v2(binary_mask,result["MASKS"][i],result["BBOXES"][i],result["CLASSES"][i],i)
+            data = create_coco_dict_seg_v2(binary_mask,result["MASKS"][i],result["BBOXES"][i],result["CLASSES"][i],i,result["SCORES"][i])
             json_data["annotations"].append(data)
     else:
         for i in range(len(result["bboxes__0"])):
-            data = create_coco_dict_od(result["bboxes__0"][i],result["classes__1"][i],i)
+            data = create_coco_dict_od(result["bboxes__0"][i],result["classes__1"][i],i,result["scores__2"][i])
             json_data["annotations"].append(data)
     return json_data
         
