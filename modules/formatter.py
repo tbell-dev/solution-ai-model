@@ -56,16 +56,13 @@ def create_coco_dict_seg_v2(image,mask,bbox,id,idx):
     tmp = mask.copy()
     #get contours of image
     tmp = tmp.astype(np.uint8)
-    contours,hierachy = cv2.findContours(tmp, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)                
+    contours,_ = cv2.findContours(tmp, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)                
     # print(len(contours))
     for cnt, cont in enumerate(contours):
             segmentation = []
             xmin,ymin,width,height = cv2.boundingRect(cont) #bounding box
             if width * height < 3:
                 continue
-            image_height = tmp.shape[0]
-            image_width = tmp.shape[1]
-
             cont = cont.flatten().tolist() #contour as 1d array has shape (x1,y1,x2,y2,...,x_n, y_n)
             if len(cont) > 4: #only of at least 2 points are there
                 segmentation.append(cont)
@@ -74,49 +71,61 @@ def create_coco_dict_seg_v2(image,mask,bbox,id,idx):
             if len(segmentation) == 0: #check again if segmentations are in list
                 continue
             if (width * height) > 100 :
-                json_data["annotations"].append({'segmentation': segmentation,
-                                'area': width * height,
-                                    'image_id': 0,
-                                    'iscrowd':0,
-                                    'bbox': [xmin,ymin,width,height],
-                                    "category_id": id,
-                                    "id": idx})
+                
+                # result_list.append({'segmentation': segmentation,
+                #                 'area': width * height,
+                #                     'image_id': 0,
+                #                     'iscrowd':0,
+                #                     'bbox': [xmin,ymin,width,height],
+                #                     "category_id": id,
+                #                     "id": idx})
+                data = {
+                        'segmentation': segmentation,
+                        'area': width * height,
+                        'image_id': 0,
+                        'iscrowd':0,
+                        'bbox': [xmin,ymin,width,height],
+                        "category_id": id,
+                        "id": idx
+                        }
     
-    return json_data
+    return data
 
 def create_coco_dict_od(bbox,id,idx):
     '''
     only creates coco dataset annotation field 
     '''
-    json_data = {}
-    json_data["annotations"] = []
     xmin,ymin,width,height = list(map(int,bbox.tolist()))
-    json_data["annotations"].append({'id': idx,
-                                     'image_id': 0,
-                                     'category_id': id,
-                                     'bbox':  list(map(int,bbox.tolist())),
-                                     'area': width * height,
-                                     'segmentation': [],
-                                     'iscrowd':0
-                                    })
-    return json_data
+    # result_list.append({'id': idx,
+    #                     'image_id': 0,
+    #                     'category_id': id,
+    #                     'bbox':  list(map(int,bbox.tolist())),
+    #                     'area': width * height,
+    #                     'segmentation': [],
+    #                     'iscrowd':0
+    #                     })
+    data = {'id': idx,
+            'image_id': 0,
+            'category_id': id,
+            'bbox':  list(map(int,bbox.tolist())),
+            'area': width * height,
+            'segmentation': [],
+            'iscrowd':0
+            }
+    return data
     
 
 def coco_format_inverter(result):
-    coco_anno_type_json_list = []
+    json_data = {}
+    json_data["annotations"] = []
     if "MASKS" in list(result.keys()):
         for i in range(len(result["MASKS"])):
             binary_mask = np.where(result["MASKS"][i] > 0,255,0)
-            # _, segmentations = create_sub_mask_annotation(binary_mask)
-            # json_data = create_coco_dict_seg(binary_mask,segmentations,result["BBOXES"][i],result["CLASSES"][i],i)
-            json_data = create_coco_dict_seg_v2(binary_mask,result["MASKS"][i],result["BBOXES"][i],result["CLASSES"][i],i)
-            coco_anno_type_json_list.append(json_data)
-            # coco_anno_type_json_list.append(json_data)
-    # print(coco_anno_type_json_list)
+            data = create_coco_dict_seg_v2(binary_mask,result["MASKS"][i],result["BBOXES"][i],result["CLASSES"][i],i)
+            json_data["annotations"].append(data)
     else:
         for i in range(len(result["bboxes__0"])):
-            json_data = create_coco_dict_od(result["bboxes__0"][i],result["classes__1"][i],i)
-            coco_anno_type_json_list.append(json_data)
-    
-    return coco_anno_type_json_list
+            data = create_coco_dict_od(result["bboxes__0"][i],result["classes__1"][i],i)
+            json_data["annotations"].append(data)
+    return json_data
         
