@@ -8,5 +8,4 @@ multidict==6.0.2
 pycocotools==2.0.4
 albumentations==1.3.0
 pynvml
-beautifulsoup4
-lxml
+docker==6.0.0
