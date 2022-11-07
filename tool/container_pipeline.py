@@ -1,5 +1,6 @@
 from genericpath import isdir
 import torch, gc , os
+import docker
 # from modules.split import spliter
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.data.datasets import register_coco_instances
@@ -44,7 +45,10 @@ from detectron2.utils.logger import setup_logger
 from unittest.mock import patch
 from functools import wraps
 
-# from tool.model_export import DEFAULT_MODEL_PATH
+# for model contorl
+import tritonclient.http as httpclient
+from tritonclient.utils import InferenceServerException
+
 
 logger = setup_logger()
 DEFAULT_MODEL_PATH = "/workspace/models/"
@@ -188,10 +192,33 @@ def model_validation(cfg,current_prj_name):
         elif min(previous_losses) >= latest_loss : 
             return latest_result+"/model_final.pth"
 
+def model_version_val(cfg):
+    prj_repo = "/".join(cfg.OUTPUT_DIR.split("/")[:-1])
+    versions = [i for i in glob(prj_repo+"/*")]
+    if len(versions) == 1:
+        return versions[0]+"/model_final.pth"
+    else:
+        latest_result = versions[-1]
+        previous_result = versions[:-1]
+        latest_loss = get_loss(latest_result)["total_loss"]
+        previous_losses = []
+        
+        for i in range(len(previous_result)):
+            previous_losses.append(get_loss(previous_result[i])["total_loss"])
+        
+        if min(previous_losses) < latest_loss : 
+            min_loss = min(previous_losses)
+            idx = previous_losses.index(min_loss)
+            return previous_result[idx]+"/model_final.pth"
+        
+        elif min(previous_losses) >= latest_loss : 
+            return latest_result+"/model_final.pth"
+
 def coco_style_gen():
     today = date.today()
     files = {}
-    files['info'] = {"year": str(today.year), "version": "1.0", "description": "Person Segmentation", "date_created": str(today.month)+"/"+str(today.day)}
+    files['info'] = {"year": str(today.year), "version": "1.0", "description": "Data format for active learning & auto labeling",
+                     "date_created": str(today.month)+"/"+str(today.day)}
     files['licenses'] = [{'id': 1,
         'name': 'TBell - sslo general license v1',
         'url': 'https://sslo.ai/'}]
@@ -297,11 +324,13 @@ class trainer:
         model_pth = ""
         if self.labeling_type == 'bbox':
             model_pth = "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
+            task_type = "od"
         elif self.labeling_type == 'polygon':
              model_pth = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"
+             task_type = "seg"
              
         cfg.merge_from_file(model_zoo.get_config_file(model_pth))
-        cfg.OUTPUT_DIR = "/workspace/output/"+self.project_name
+        cfg.OUTPUT_DIR = f"/workspace/output/{task_type}/{self.project_name}"
         cfg.DATASETS.TRAIN = ("my_dataset_train",)
         cfg.DATASETS.TEST = ()
         cfg.DATALOADER.NUM_WORKERS = 2
@@ -317,12 +346,15 @@ class trainer:
         self.cfg = cfg
         
         if os.path.isdir(self.cfg.OUTPUT_DIR):
-            model_repo = "/workspace/output"
-            same_prjs = [i for i in glob(model_repo+'/*') if self.project_name in i.split("/")[-1]]
-            self.cfg.OUTPUT_DIR = "/workspace/output/"+self.project_name+"_"+str(len(same_prjs))
+            # model_repo = "/workspace/output"
+            # same_prjs = [i for i in glob(model_repo+'/*') if self.project_name in i.split("/")[-1]]
+            # prj_dir = f"/workspace/output/{task_type}/{self.project_name}"
+            versions = [i for i in glob(self.cfg.OUTPUT_DIR+"/*")]
+            self.cfg.OUTPUT_DIR = f"/workspace/output/{task_type}/{self.project_name}/{str(len(versions)+1)}"
             os.makedirs(self.cfg.OUTPUT_DIR)
             
-        else: 
+        else:
+            self.cfg.OUTPUT_DIR = self.cfg.OUTPUT_DIR+"/1"
             os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
             
         trainer = DefaultTrainer(self.cfg)
@@ -333,9 +365,9 @@ class trainer:
         gc.collect()
         torch.cuda.empty_cache()
         
-        return cfg
+        return self.cfg
 
-def configure_model_dir(task_type,cfg,sample_image,output_dir_name):
+def configure_model_dir(task_type,cfg,sample_image,output_dir_name): 
     deploy_dir = ""
     if os.path.isdir(DEFAULT_MODEL_PATH+"/"+output_dir_name):
         deploy_dir = DEFAULT_MODEL_PATH+"/"+output_dir_name+"/1"
@@ -358,12 +390,61 @@ def configure_model_dir(task_type,cfg,sample_image,output_dir_name):
         shutil.copy(DEFAULT_MODEL_PATH+"faster_rcnn/config.pbtxt",DEFAULT_MODEL_PATH+output_dir_name+"/config.pbtxt" )
         
     model_export_to_ts(cfg,sample_image,deploy_dir) 
-           
+
+def deploy_servable_model(cfg,sample_image,output_dir_name): # output_dir_name = [task,project_name,version]
+    deploy_dir = ""
+    if os.path.isdir(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]):
+        deploy_dir = DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]+"/"+output_dir_name[2]
+        os.mkdir(deploy_dir)
+    else :
+        deploy_dir = DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]+"/1"
+        os.makedirs(deploy_dir)
+        
+    if output_dir_name[0] == "seg":
+        shutil.copy(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/mask_rcnn/config.pbtxt",
+                    DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]+"/config.pbtxt")
+        
+        if os.path.isdir(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]):
+            
+            os.mkdir(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+"/"+output_dir_name[2])
+            with open(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+'/config.pbtxt') as f:
+                txt = f.read()
+            text =  txt.replace(f'      model_name: "{output_dir_name[1]}"\n      model_version: {str(int(output_dir_name[2]) - 1)}',
+                                f'      model_name: "{output_dir_name[1]}"\n      model_version: {output_dir_name[2]}')
+            
+        else:
+            shutil.copytree(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline",
+                            DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1])
+            with open(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+'/config.pbtxt') as f:
+                txt = f.read()
+                
+            text =  txt.replace(f'      model_name: "mask_rcnn"\n      model_version: 1',
+                                f'      model_name: "{output_dir_name[1]}"\n      model_version: {output_dir_name[2]}')
+        
+        with open(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+'/config.pbtxt',"w") as f:
+            f.write(text)
+            
+    elif output_dir_name[0] == "od":
+        shutil.copy(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/faster_rcnn/config.pbtxt",
+                    DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]+"/config.pbtxt")
+        
+    model_export_to_ts(cfg,sample_image,deploy_dir) 
+    return output_dir_name[1]
+
+def model_ctl(ctl,model_name,host= "localhost",port = 8000):
+    triton_client = httpclient.InferenceServerClient(url=host+":"+str(port), verbose=False)
+    if ctl == "load":
+        triton_client.load_model(model_name)
+    if ctl == "unload":
+        triton_client.unload_model(model_name)
+    return [stats for stats in triton_client.get_model_repository_index() if stats["name"] == model_name][0]
+         
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_dir',help="image & json path from local filesystem, root of train/ & val/", type=str ,default="/workspace/dataset/")
     parser.add_argument('--project_name', type=str ,default="0",required=True)
     parser.add_argument('--labeling_type', type=str ,default="bbox", required=True)
+    parser.add_argument('--serving_host', type=str ,default="192.168.0.3")
     parser.add_argument('--split',  type=float ,default=0.7)
     # parser.add_argument('--outputdir',  type=str ,default="/workspace/models/") # mounted with '{project_root}/models' on host
     return parser.parse_args()
@@ -375,15 +456,23 @@ if __name__ == '__main__':
     labeling_type = args.labeling_type
     project_name = args.project_name
     v = args.split
-    task_type = "od"
+    serving_host = args.serving_host
+    task_type = ""
+    
     train = trainer(dataset_dir,project_name,labeling_type,v=0.8,op="cp")
     cfg = train.start()
     
-    weight_path = model_validation(cfg,project_name)
+    # weight_path = model_validation(cfg,project_name)
+    weight_path = model_version_val(cfg)
     if "/".join(weight_path.split("/")[:-1]) == cfg.OUTPUT_DIR:
         cfg.MODEL.WEIGHTS = weight_path
         sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
-        if labeling_type == "bbox": task_type = "od"
-        if labeling_type == "polygon": task_type = "seg"
-        configure_model_dir(task_type,cfg,sample_image,output_dir_name = cfg.OUTPUT_DIR.split("/")[-1])
+        model_name = deploy_servable_model(cfg,sample_image,output_dir_name=cfg.OUTPUT_DIR.split("/")[-3:])
+        
+        if labeling_type == "bbox":
+            model_ctl("load",model_name,host = str(serving_host),port = 8000)
+        elif labeling_type == "polygon" or labeling_type == "segment":
+            model_ctl("load",model_name,host = str(serving_host),port = 8001)
+            model_ctl("load","infer_pipeline_"+model_name,host =  str(serving_host),port = 8001)
+        
         
