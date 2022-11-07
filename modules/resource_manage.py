@@ -49,7 +49,7 @@ def get_current_learning_status(project_name,model_repository):
             result["eta_sec"] = str(int(json_data[-1]["eta_seconds"]))
     return result
 
-def get_model_state(learning_status_result,servable_model_repo):
+def get_model_status(learning_status_result,servable_model_repo):
     result={"model_name":"","state":""}
     if learning_status_result["status"] == "Success":
         if learning_status_result["learn_iteration"] == str(0):
