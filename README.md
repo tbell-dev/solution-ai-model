@@ -4,20 +4,14 @@
 AI core 아키텍쳐
 ![](img/core_arch.PNG)
 
-모델 서빙 서버 및 클라이언트 개발 with Triton 
-![](img/inference-logic.png)
-
-데이터 증강 프로세스
-![](img/data_aug_process.PNG)
-
 ## Docker Images
 docker hub URL [here](https://hub.docker.com/repository/docker/tbelldev/sslo-ai)
 ```sh
-t-v0.1 / t-v0.2 : container for active learning
+t-v0.1 / t-v0.2 / t-v0.3 : container for train(active learning)
 i-v0.1 : container for inference(auto-labeling) 
 ```
-## version compatibility
 
+## version compatibility
 ```sh
 OS : Ubuntu 18.04
 GPU : Geforce RTX 3090 (2EA) 
@@ -53,6 +47,7 @@ opencv-python==4.6.0.66
 multidict==6.0.2
 pycocotools==2.0.4
 albumentations==1.3.0
+docker==6.0.0
 ```
 
 ## download models
@@ -65,7 +60,7 @@ after download, place .pkl file to checkpoints/
 
 # downdload torchscript model for serving
 [faster-rcnn model](https://drive.google.com/drive/folders/1YqmH7f5pDmfLgZFqcE4iBQPaORnpKrgW),[mask_rcnn model](https://drive.google.com/drive/folders/1ySaej3dVPBVPQBRJZAabHX2wZF555tlr)
-and place each files into models/faster_rcnn/1/ , models/mask_rcnn/1/  
+and place each files into servable_models/od/faster_rcnn/1/ , servable_models/seg/mask_rcnn/1/  
 
 # Run
 ```sh
