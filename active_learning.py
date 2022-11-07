@@ -3,13 +3,20 @@ from tool.augmentation import augmentator
 import argparse
 # import docker
 from modules.container_ctl import train_server_start, get_container_list
+import json, glob
+
+def define_label_type(jsonpath):
+    jsonfile = [i for i in glob.glob(jsonpath+"/*.json")][0]
+    with open(jsonfile, 'r') as f: user_labeled_data = json.load(f)
+    if len(user_labeled_data["annotations"][0]["segmentation"]) > 0 : return "polygon"
+    elif len(user_labeled_data["annotations"][0]["segmentation"]) == 0 : return "bbox"
 
 class activeLearning:
     """
     self.dataset_path # 데이터 증강 이전에 사용자들이 라벨링 한 원본 데이터 셋 경로 
     self.aug_dataset_path  # 학습에 사용될 실제 데이터 셋의 경로
     self.project_name # 프로젝트별 고유 식별 코드
-    self.labeling_type # bbox or polygon
+    self.labeling_type # bbox or polygon 
     self.v # 데이터 셋 train, val 로 나누는 비율 ex. 0.7 -> train 70% , val 30%
     self.iter  # 데이터 증강 개수 설정
     self.model_repository # 학습 컨테이너에 마운팅 되어 학습만 완료 된 상태의 모델 폴더의 경로 
@@ -21,21 +28,29 @@ class activeLearning:
     def __init__(self,
                  dataset_dir,
                  project_name,
-                 labeling_type,
+                #  labeling_type,
                  servable_model_path,
                  model_repository,
                  split = 0.7,
                  aug_iter = 10,
                  device_id = 1,
-                 base_url = 'tcp://192.168.0.2:2375'):
+                 base_url = 'tcp://192.168.0.2:2375',
+                 labeling_type = None):
                 
         self.dataset_path = str(dataset_dir)+"/" 
         self.aug_dataset_path = str(self.dataset_path) + "/augmented/" 
         self.project_name = str(project_name) 
-        self.labeling_type = str(labeling_type)
         
+        
+        # get labeling_type from labeled data
+        if labeling_type == None:
+            self.labeling_type = define_label_type(self.dataset_path) 
+        else:
+            self.labeling_type = labeling_type
+            
         if self.labeling_type == "bbox": self.task_type = "od"
         elif self.labeling_type == "polygon": self.task_type = "seg"
+        
         self.v = float(str(split))
         self.iter = int(aug_iter)
         self.model_repository = str(model_repository)
