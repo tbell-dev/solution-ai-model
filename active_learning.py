@@ -24,6 +24,7 @@ class activeLearning:
                                inference 될수있는 형태로 변환 된 모델 저장소의 경로
     self.device_id # 학습 시 지정할 GPU 디바이스 아이디 (0,1)
     self.base_url  # 컨테이너를 띄울 호스트 서버 주소:도커 데몬 포트
+    self.serving_host # 학습이 완료 된 후 torchscript로 변환된 모델을 triton 서빙 구조로 만들고, 서빙하기 위한 호스트 
     """
     def __init__(self,
                  dataset_dir,
@@ -35,12 +36,13 @@ class activeLearning:
                  aug_iter = 10,
                  device_id = 1,
                  base_url = 'tcp://192.168.0.2:2375',
+                 serving_host = "192.168.0.3",
                  labeling_type = None):
                 
         self.dataset_path = str(dataset_dir)+"/" 
         self.aug_dataset_path = str(self.dataset_path) + "/augmented/" 
         self.project_name = str(project_name) 
-        
+        self.serving_host = serving_host
         
         # get labeling_type from labeled data
         if labeling_type == None:
@@ -73,6 +75,7 @@ class activeLearning:
                           self.labeling_type,
                           self.project_name,
                           self.device_id,
+                          serving_host = self.serving_host,
                           base_url = self.base_url)
     def activate(self):
         self.activate_aug()
