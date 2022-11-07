@@ -24,6 +24,6 @@ ADD detectron2 /workspace/detectron2/
 RUN /bin/bash -c "source activate detectron2 && pip install opencv-python && \
     pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113 && \
     python -m pip install -e /workspace/detectron2 && \
-    pip install fairscale && pip install timm"
+    pip install docker && pip install fairscale && pip install timm && pip install tritonclient[all]"
 
 SHELL ["conda", "run", "--no-capture-output", "-n", "detectron2", "/bin/bash", "-c"]
