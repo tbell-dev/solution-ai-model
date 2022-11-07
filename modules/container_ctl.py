@@ -29,18 +29,24 @@ def stop_container(name,base_url = 'tcp://192.168.0.2:2375'):
             i.stop()
 
 def rm_container(name,base_url = 'tcp://192.168.0.2:2375'):
-    # client = docker.from_env()
     client = docker.DockerClient(base_url=base_url)
     for i in client.containers.list():
         container_name = i.name
         if name == container_name :
             i.remove()
             
-def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type,project_name,device_id,base_url = 'tcp://192.168.0.2:2375'):
-    # client = docker.from_env()
+def train_server_start(dataset_path,
+                       model_repo,
+                       servable_model_repo,
+                       labeling_type,
+                       project_name,
+                       device_id,
+                       base_url = 'tcp://192.168.0.2:2375',
+                       serving_host = "192.168.0.3"):
+    
     client = docker.DockerClient(base_url=base_url)
     container = client.containers.run(
-    image = 'tbelldev/sslo-ai:t-v0.2',
+    image = 'tbelldev/sslo-ai:t-v0.3',
     name = "train_server_"+str(project_name),
     detach=True,
     runtime="nvidia",
@@ -54,28 +60,35 @@ def train_server_start(dataset_path,model_repo,servable_model_repo,labeling_type
                },
     command = f"conda run --no-capture-output -n detectron2 \
                 python src/container_pipeline.py \
-                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name}", #--ouput_host {host_model_repo}
+                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name} --serving_host {serving_host}", #--ouput_host {host_model_repo}
     remove = True
     )
     
     return container
 
-def inference_server_start(model_repo_path,port,device_id = 0,mode = "explicit",base_url = 'tcp://192.168.0.2:2375'):
+def inference_server_start(model_repo_path,port,type = "od",device_id = 0,mode = "explicit",base_url = 'tcp://192.168.0.2:2375'):
     # client = docker.from_env()
     client = docker.DockerClient(base_url=base_url)
     option = ""
+    if type == "od":
+       model_repo_path =  model_repo_path + "/od"
+       ct_name = "inference_server_od"
+    else : 
+        model_repo_path =  model_repo_path + "/seg"
+        ct_name = "inference_server_seg"
     if mode == "poll":
         option = " --repository-poll-secs=10"
+        
     container = client.containers.run(
     image = 'tbelldev/sslo-ai:i-v0.1',
-    name = "inference_server_"+str(len(get_container_list(base_url))),
+    name = ct_name,
     detach=True,
     runtime="nvidia",
     device_requests=[
         docker.types.DeviceRequest(device_ids=[str(device_id)], capabilities=[["gpu"]])
     ],
     ports = {'8000/tcp': port},
-    shm_size ="30G",
+    shm_size ="12G",
     volumes = {model_repo_path:{'bind':"/models",'mode':"rw"}},
     command = f"tritonserver --model-repository=/models --model-control-mode={mode}"+option,
     remove = True
