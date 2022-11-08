@@ -96,7 +96,7 @@ def infer_result_filter(pred,task_type,score:float,class_name:list):
         
     if task_type == "seg":
         for i in range(len(pred[list(pred.keys())[0]])):
-            if pred[list(pred.keys())[0]][i] >= score and pred[list(pred.keys())[2]][i] in get_key_from_value(COCO_NAMES,class_name)[0]:
+            if pred[list(pred.keys())[0]][i] >= score and pred[list(pred.keys())[2]][i] in get_key_from_value(COCO_NAMES,class_name):
                 idx_list.append(i)
             
         # filter result
@@ -108,7 +108,42 @@ def infer_result_filter(pred,task_type,score:float,class_name:list):
                 
     elif task_type == "od":
         for i in range(len(pred[list(pred.keys())[2]])):
-            if pred[list(pred.keys())[2]][i] >= score and pred[list(pred.keys())[1]][i] in get_key_from_value(COCO_NAMES,class_name)[0]:
+            if pred[list(pred.keys())[2]][i] >= score and pred[list(pred.keys())[1]][i] in get_key_from_value(COCO_NAMES,class_name):
+                idx_list.append(i)
+            
+        # filter result
+        for idx in idx_list: 
+            for key in list(pred.keys())[:3]:
+                if len(new_pred[key]) == 0:
+                    new_pred[key] = [pred[key][idx]]
+                else : new_pred[key].append(pred[key][idx])
+            
+        
+        new_pred[list(pred.keys())[-1]] = pred[list(pred.keys())[-1]]
+    
+    return new_pred
+
+def infer_result_filter_conf(pred,task_type,score:float):
+    idx_list, new_pred = [], {}
+    
+    for key in list(pred.keys()):
+        new_pred[key] = []
+        
+    if task_type == "seg":
+        for i in range(len(pred[list(pred.keys())[0]])):
+            if pred[list(pred.keys())[0]][i] >= score:
+                idx_list.append(i)
+            
+        # filter result
+        for idx in idx_list: 
+            for key in list(pred.keys())[:4]:
+                if len(new_pred[key]) == 0:
+                    new_pred[key] = [pred[key][idx]]
+                else : new_pred[key].append(pred[key][idx])
+                
+    elif task_type == "od":
+        for i in range(len(pred[list(pred.keys())[2]])):
+            if pred[list(pred.keys())[2]][i] >= score:
                 idx_list.append(i)
             
         # filter result
