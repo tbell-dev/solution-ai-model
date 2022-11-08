@@ -7,19 +7,19 @@ from modules.formatter import *
 # triton serving client
 from modules.triton_serving import *
     
-def inference_triton(image_path,model_name:str,class_list:list,confidence,port=8000,label_type = "bbox"):
+def inference_triton(image_path,model_name:str,confidence,port=8000,label_type = "bbox"):
     # inference using triton serving container , with httpclient 
     if label_type == "bbox":
         task_type = "od"
         # model_name = "faster_rcnn"
         pred = inference(model_name,image_path,task_type,port=8000)
-        result = infer_result_filter(pred,task_type,confidence,class_list)
+        result = infer_result_filter_conf(pred,task_type,confidence)
         
     elif label_type == "polygon" or label_type == "segment":
         task_type = "seg"
         # model_name = "infer_pipeline"
         pred = inference(model_name,image_path,task_type,port=8001)
-        result = infer_result_filter(pred,task_type,confidence,class_list)
+        result = infer_result_filter_conf(pred,task_type,confidence)
     
     response_data = coco_format_inverter(result)
     # return result
