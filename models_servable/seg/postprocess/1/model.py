@@ -60,7 +60,10 @@ class TritonPythonModel:
             self.paste_mask(mask[0, :, :], box, img_h, img_w, 0.5)
             for mask, box in zip(predictions['masks'], predictions['bboxes'])
         ]
-        predictions['masks'] = np.stack(full_masks, axis=0)
+        if len(full_masks) == 0:
+            predictions['masks'] = np.array([])
+        else:
+            predictions['masks'] = np.stack(full_masks, axis=0)
         return predictions
 
     def execute(self, requests):
