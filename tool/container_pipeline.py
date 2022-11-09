@@ -307,6 +307,8 @@ class trainer:
         self.labeling_type = labeling_type
         self.train_path = self.output_dir+"/train/"
         self.val_path = self.output_dir+"/val/"
+        
+        self.cfg = get_cfg()
         self.cats = spliter(self.output_dir,v=self.v,op=op)
         self.register_data()
         
@@ -319,8 +321,6 @@ class trainer:
         DatasetCatalog.clear()
         
     def start(self):
-        cfg = get_cfg()
-        
         model_pth = ""
         if self.labeling_type == 'bbox':
             model_pth = "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
@@ -329,21 +329,19 @@ class trainer:
              model_pth = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"
              task_type = "seg"
              
-        cfg.merge_from_file(model_zoo.get_config_file(model_pth))
-        cfg.OUTPUT_DIR = f"/workspace/output/{task_type}/{self.project_name}"
-        cfg.DATASETS.TRAIN = ("my_dataset_train",)
-        cfg.DATASETS.TEST = ()
-        cfg.DATALOADER.NUM_WORKERS = 2
-        cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_pth)  # Let training initialize from model zoo
-        cfg.SOLVER.IMS_PER_BATCH = 2 # This is the real "batch size" commonly known to deep learning people
-        cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-        cfg.SOLVER.MAX_ITER = 1000    # 300 iterations seems good enough for this toy dataset; you will need to train longer for a practical dataset
-        cfg.SOLVER.STEPS = []        # do not decay learning rate
-        cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512   # The "RoIHead batch size". 128 is faster, and good enough for this toy dataset (default: 512)
-        cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(self.cats)  # only has one class (ballon). (see https://detectron2.readthedocs.io/tutorials/datasets.html#update-the-config-for-new-datasets)
+        self.cfg.merge_from_file(model_zoo.get_config_file(model_pth))
+        self.cfg.OUTPUT_DIR = f"/workspace/output/{task_type}/{self.project_name}"
+        self.cfg.DATASETS.TRAIN = ("my_dataset_train",)
+        self.cfg.DATASETS.TEST = ()
+        self.cfg.DATALOADER.NUM_WORKERS = 2
+        self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_pth)  # Let training initialize from model zoo
+        self.cfg.SOLVER.IMS_PER_BATCH = 2 # This is the real "batch size" commonly known to deep learning people
+        self.cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
+        self.cfg.SOLVER.MAX_ITER = 1000    # 300 iterations seems good enough for this toy dataset; you will need to train longer for a practical dataset
+        self.cfg.SOLVER.STEPS = []        # do not decay learning rate
+        self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512   # The "RoIHead batch size". 128 is faster, and good enough for this toy dataset (default: 512)
+        self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(self.cats)  # only has one class (ballon). (see https://detectron2.readthedocs.io/tutorials/datasets.html#update-the-config-for-new-datasets)
         # NOTE: this config means the number of classes, but a few popular unofficial tutorials incorrect uses num_classes+1 here.
-        
-        self.cfg = cfg
         
         if os.path.isdir(self.cfg.OUTPUT_DIR):
             # model_repo = "/workspace/output"
@@ -360,6 +358,14 @@ class trainer:
         trainer = DefaultTrainer(self.cfg)
         trainer.resume_or_load(resume=False)
         trainer.train()
+        
+        
+        
+        torch.save(trainer.model.state_dict(), os.path.join(self.cfg.OUTPUT_DIR, "model_final_ckpt.pth"))
+        model = build_model(self.cfg)
+        model.load_state_dict(torch.load(os.path.join(self.cfg.OUTPUT_DIR, "model_final_ckpt.pth")))
+        model.eval()
+        torch.save(model,self.cfg.OUTPUT_DIR+'/model_final_torch.pt')
         
         #for free gpu
         gc.collect()
