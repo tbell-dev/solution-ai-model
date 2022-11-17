@@ -157,6 +157,25 @@ def model_export_to_ts(cfg,sample_image,ouput_dir):
         
     logger.info("Success.")
 
+def model_export_to_onnx(cfg,sample_image,ouput_dir):
+    global logger
+    # logger = setup_logger()
+    PathManager.mkdirs(ouput_dir)
+    torch._C._jit_set_bailout_depth(1)
+
+    # create a torch model
+    torch_model = build_model(cfg)
+    DetectionCheckpointer(torch_model).resume_or_load(cfg.MODEL.WEIGHTS)
+    torch_model.eval()
+    
+    # get sample data
+    sample_inputs = get_sample_inputs_func(cfg,sample_image)
+
+    # convert and save model
+    exported_model = export_tracing("onnx",torch_model, sample_inputs,ouput_dir)
+        
+    logger.info("Success.")
+
 def get_loss(metric_path):
     metric_path = os.path.join(metric_path,"metrics.json")
     f = open(metric_path, 'r')
@@ -360,7 +379,7 @@ class trainer:
         trainer.train()
         
         
-        
+        # detectron2 -> torch
         torch.save(trainer.model.state_dict(), os.path.join(self.cfg.OUTPUT_DIR, "model_final_ckpt.pth"))
         model = build_model(self.cfg)
         model.load_state_dict(torch.load(os.path.join(self.cfg.OUTPUT_DIR, "model_final_ckpt.pth")))
@@ -433,8 +452,10 @@ def deploy_servable_model(cfg,sample_image,output_dir_name): # output_dir_name =
     elif output_dir_name[0] == "od":
         shutil.copy(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/faster_rcnn/config.pbtxt",
                     DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]+"/config.pbtxt")
-        
-    model_export_to_ts(cfg,sample_image,deploy_dir) 
+    # export torchscript to models(servable)    
+    model_export_to_ts(cfg,sample_image,deploy_dir)
+    # export onnx to output(trained)
+    model_export_to_onnx(cfg,sample_image,cfg.OUTPUT_DIR)
     return output_dir_name[1]
 
 def model_ctl(ctl,model_name,host= "localhost",port = 8000):
