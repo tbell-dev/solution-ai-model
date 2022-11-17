@@ -205,7 +205,7 @@ def get_sample_inputs_func(cfg,sample_image):
     
     
 def model_export_to_ts(cfg_file,sample_image,ouput_dir):
-    global logger    
+    global logger
     # logger = setup_logger()
     PathManager.mkdirs(ouput_dir)
     torch._C._jit_set_bailout_depth(1)
@@ -232,6 +232,34 @@ def model_export_to_ts(cfg_file,sample_image,ouput_dir):
     #     exported_model = export_scripting("torchscript",torch_model)
     # elif method == "tracing":
     exported_model = export_tracing("torchscript",torch_model, sample_inputs,ouput_dir)
+        
+    logger.info("Success.")
+
+def model_export_to_onnx(cfg_file,sample_image,ouput_dir):
+    global logger
+    # logger = setup_logger()
+    PathManager.mkdirs(ouput_dir)
+    torch._C._jit_set_bailout_depth(1)
+
+    # cfg = setup_cfg(args)
+    cfg = get_cfg()
+    # cuda context is initialized before creating dataloader, so we don't fork anymore
+    cfg.DATALOADER.NUM_WORKERS = 0
+    add_pointrend_config(cfg)
+    cfg.merge_from_file(cfg_file)
+    cfg.merge_from_list([])
+    cfg.freeze()
+
+    # create a torch model
+    torch_model = build_model(cfg)
+    DetectionCheckpointer(torch_model).resume_or_load(cfg.MODEL.WEIGHTS)
+    torch_model.eval()
+    
+    # get sample data
+    sample_inputs = get_sample_inputs_func(cfg,sample_image)
+
+    # convert and save model
+    exported_model = export_tracing("onnx",torch_model, sample_inputs,ouput_dir)
         
     logger.info("Success.")
 
