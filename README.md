@@ -18,7 +18,7 @@ GPU : Geforce RTX 3090 (2EA)
 nvidia driver (nvidia-driver-470)
 cuda(11.3)
 cudnn(8.2.1)
-pytorch(1.11.0)
+pytorch(1.12.1)
 docker (v20.10.17)
 nvidia-docker
 detectron2(v0.6)
