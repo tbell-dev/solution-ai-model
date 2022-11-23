@@ -49,6 +49,8 @@ from functools import wraps
 import tritonclient.http as httpclient
 from tritonclient.utils import InferenceServerException
 
+# for model convert to tensorflow
+from tensorConverter.d2pb import D2toTensorflow
 
 logger = setup_logger()
 DEFAULT_MODEL_PATH = "/workspace/models/"
@@ -452,9 +454,9 @@ def deploy_servable_model(cfg,sample_image,output_dir_name): # output_dir_name =
     elif output_dir_name[0] == "od":
         shutil.copy(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/faster_rcnn/config.pbtxt",
                     DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/"+output_dir_name[1]+"/config.pbtxt")
-    # export torchscript to models(servable)    
+    # detectron2 -> torchscript : export torchscript to models(servable)    
     model_export_to_ts(cfg,sample_image,deploy_dir)
-    # export onnx to output(trained)
+    # detectron2 -> onnx : export onnx to output(trained)
     model_export_to_onnx(cfg,sample_image,cfg.OUTPUT_DIR)
     return output_dir_name[1]
 
@@ -491,11 +493,13 @@ if __name__ == '__main__':
     
     # weight_path = model_validation(cfg,project_name)
     weight_path = model_version_val(cfg)
+    
+    
     if "/".join(weight_path.split("/")[:-1]) == cfg.OUTPUT_DIR:
         cfg.MODEL.WEIGHTS = weight_path
         sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
         model_name = deploy_servable_model(cfg,sample_image,output_dir_name=cfg.OUTPUT_DIR.split("/")[-3:])
-        
+        D2toTensorflow(cfg,weight_path,dataset_dir,cfg.OUTPUT_DIR+"/model")
         if labeling_type == "bbox":
             model_ctl("load",model_name,host = str(serving_host),port = 8000)
         elif labeling_type == "polygon" or labeling_type == "segment":
