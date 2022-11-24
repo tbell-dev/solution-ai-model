@@ -473,7 +473,7 @@ def parse_args():
     parser.add_argument('--dataset_dir',help="image & json path from local filesystem, root of train/ & val/", type=str ,default="/workspace/dataset/")
     parser.add_argument('--project_name', type=str ,default="0",required=True)
     parser.add_argument('--labeling_type', type=str ,default="bbox", required=True)
-    parser.add_argument('--serving_host', type=str ,default="192.168.0.3")
+    parser.add_argument('--serving_host', type=str ,default="172.17.0.1")
     parser.add_argument('--split',  type=float ,default=0.7)
     # parser.add_argument('--outputdir',  type=str ,default="/workspace/models/") # mounted with '{project_root}/models' on host
     return parser.parse_args()
