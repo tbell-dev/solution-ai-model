@@ -5,6 +5,13 @@ import tritonclient.http as httpclient
 from PIL import Image
 import numpy as np
 from modules.labels import COCO_NAMES
+import cv2
+
+def convertToBinaryData(filename):
+    # Convert digital data to binary format
+    with open(filename, 'rb') as file:
+        binaryData = file.read()
+    return binaryData
 
 def inference(model_name,image_file,task_type,port=8000,host = "localhost",print_output=True):
     e = time.time()
@@ -52,9 +59,15 @@ def client_v1(image_file, model_name,task_type,port=8000,host = "localhost",prin
 
 
 def client_v2(image_file, model_name,task_type,port=8000, host = "localhost",print_output=False):
-    with open(image_file, 'rb') as fi:
-        image_bytes = fi.read()
-    image_bytes = np.array([image_bytes], dtype=np.bytes_)
+    if type(image_file) == str:
+        with open(image_file, 'rb') as fi:
+            image_bytes = fi.read()
+        image_bytes = np.array([image_bytes], dtype=np.bytes_)
+    else:
+        img = np.array(Image.open(image_file))
+        print("imgs : \n",img)
+        _, encoded_image  = cv2.imencode('.png', img)
+        image_bytes = np.array([encoded_image.tobytes()], dtype=np.bytes_)
     # Define model's inputs
     inputs = []
     inputs.append(httpclient.InferInput('IMAGE_BYTES', image_bytes.shape, "BYTES"))
