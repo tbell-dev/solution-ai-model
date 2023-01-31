@@ -79,7 +79,9 @@ def create_coco_dict_seg_v2(image,mask,bbox,id,idx,score,image_id = 0):
                         'bbox': [xmin,ymin,width,height],
                         "category_id": id,
                         "id": idx,
-                        'score':score
+                        'score':score,
+                        "keypoints":[],
+                        "num_keypoints":0
                         }
     
     return data
@@ -104,7 +106,75 @@ def create_coco_dict_od(bbox,id,idx,score,image_id = 0):
             'area': width * height,
             'segmentation': [],
             'iscrowd':0,
-            'score':score
+            'score':score,
+            "keypoints":[],
+            "num_keypoints":0
+            }
+    return data
+
+def create_coco_dict_seg_v2_batch(image,mask,bbox,id,idx,score,image_id = 0):
+    '''
+    only creates coco dataset annotation field 
+    '''
+    json_data = {}
+    json_data["annotations"] = []
+    segmentation = []
+
+    xmin,ymin,width,height = bbox.tolist()
+    image_height = image.shape[0]
+    image_width = image.shape[1]
+    tmp = mask.copy()
+    #get contours of image
+    tmp = tmp.astype(np.uint8)
+    contours,_ = cv2.findContours(tmp, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)                
+    # print(len(contours))
+    data = None
+    for cnt, cont in enumerate(contours):
+            segmentation = []
+            xmin,ymin,width,height = cv2.boundingRect(cont) #bounding box
+            if width * height < 3:
+                continue
+            cont = cont.flatten().tolist() #contour as 1d array has shape (x1,y1,x2,y2,...,x_n, y_n)
+            if len(cont) > 4: #only of at least 2 points are there
+                segmentation.append(cont)
+            else:
+                continue
+            if len(segmentation) == 0: #check again if segmentations are in list
+                continue
+            if (width * height) > 100 :
+                data = {
+                        'segmentation': segmentation,
+                        'area': width * height,
+                        'image_id': image_id,
+                        'iscrowd':0,
+                        'bbox': [xmin,ymin,width,height],
+                        "category_id": id,
+                        "id": idx,
+                        "keypoints":[],
+                        "num_keypoints":0
+                        }
+    return data
+
+def create_coco_dict_od_batch(bbox,id,idx,score,image_id = 0):
+    '''
+    only creates coco dataset annotation field 
+    '''
+    xmin,ymin,width,height = list(map(int,bbox.tolist()))
+    # result_list.append({'id': idx,
+    #                     'image_id': 0,
+    #                     'category_id': id,
+    #                     'bbox':  list(map(int,bbox.tolist())),
+    #                     'area': width * height,
+    #                     'segmentation': [],
+    #                     'iscrowd':0
+    #                     })
+    data = {'id': idx,
+            'image_id': image_id,
+            'category_id': id,
+            'bbox':  list(map(int,bbox.tolist())),
+            'area': width * height,
+            'segmentation': [],
+            'iscrowd':0
             }
     return data
     
@@ -131,21 +201,27 @@ def coco_format_inverter_batch(result_list,image_list):
         if "MASKS" in list(result_list[r].keys()):
             for i in range(len(result_list[r]["MASKS"])):
                 binary_mask = np.where(result_list[r]["MASKS"][i] > 0,255,0)
-                data = create_coco_dict_seg_v2(binary_mask,
+                data = create_coco_dict_seg_v2_batch(binary_mask,
                                                result_list[r]["MASKS"][i],
                                                result_list[r]["BBOXES"][i],
                                                result_list[r]["CLASSES"][i],
                                                i,
                                                result_list[r]["SCORES"][i],
-                                               image_id = file_name)
-                json_data["annotations"].append(data)
+                                               image_id = int(file_name))
+                if data == None: pass
+                else:json_data["annotations"].append(data)
         else:
             for i in range(len(result_list[r]["bboxes__0"])):
-                data = create_coco_dict_od(result_list[r]["bboxes__0"][i],
+                data = create_coco_dict_od_batch(result_list[r]["bboxes__0"][i],
                                            result_list[r]["classes__1"][i],
                                            i,
                                            result_list[r]["scores__2"][i],
-                                           image_id = file_name)
+                                           image_id = int(file_name))
                 json_data["annotations"].append(data)
+    
+    
+    for i in range(len(json_data["annotations"])):
+        json_data["annotations"][i]["id"] = i
+                
     return json_data
         
