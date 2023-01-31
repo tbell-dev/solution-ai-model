@@ -19,7 +19,7 @@ def inference(model_name,image_file,task_type,port=8000,host = "localhost",print
         pred = client_v2(image_file, model_name,task_type,port,host,print_output)
     elif task_type == "od":
         pred = client_v1(image_file, model_name,task_type,port,host,print_output)
-    s = time.time()    
+    s = time.time()
     print('speed:', (s - e))
     return pred
 
@@ -65,7 +65,6 @@ def client_v2(image_file, model_name,task_type,port=8000, host = "localhost",pri
         image_bytes = np.array([image_bytes], dtype=np.bytes_)
     else:
         img = np.array(Image.open(image_file))
-        print("imgs : \n",img)
         _, encoded_image  = cv2.imencode('.png', img)
         image_bytes = np.array([encoded_image.tobytes()], dtype=np.bytes_)
     # Define model's inputs
