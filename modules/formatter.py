@@ -21,26 +21,26 @@ def coco_style_gen():
     files['images'] = []
     return files
 
-def create_coco_dict_seg(image,segmentations,bbox,id,idx):
-    '''
-    only creates coco dataset annotation field 
-    '''
-    json_data = {}
-    json_data["annotations"] = []
-    segmentation = []
+# def create_coco_dict_seg(image,segmentations,bbox,id,idx):
+#     '''
+#     only creates coco dataset annotation field 
+#     '''
+#     json_data = {}
+#     json_data["annotations"] = []
+#     segmentation = []
 
-    xmin,ymin,width,height = bbox.tolist()
-    image_height = image.shape[0]
-    image_width = image.shape[1]
-    json_data["annotations"].append({'segmentation': segmentations,
-                                    'area': width * height,
-                                    'image_id': 0,
-                                    'iscrowd':0,
-                                    'bbox': [xmin,ymin,width,height],
-                                    "category_id": id,
-                                    "id": idx})
+#     xmin,ymin,width,height = bbox.tolist()
+#     image_height = image.shape[0]
+#     image_width = image.shape[1]
+#     json_data["annotations"].append({'segmentation': segmentations,
+#                                     'area': width * height,
+#                                     'image_id': 0,
+#                                     'iscrowd':0,
+#                                     'bbox': [xmin,ymin,width,height],
+#                                     "category_id": id,
+#                                     "id": idx})
     
-    return json_data
+#     return json_data
 
 def create_coco_dict_seg_v2(image,mask,bbox,id,idx,score,image_id = 0):
     '''
@@ -151,7 +151,8 @@ def create_coco_dict_seg_v2_batch(image,mask,bbox,id,idx,score,image_id = 0):
                         "category_id": id,
                         "id": idx,
                         "keypoints":[],
-                        "num_keypoints":0
+                        "num_keypoints":0,
+                        "score":score
                         }
     return data
 
@@ -174,7 +175,10 @@ def create_coco_dict_od_batch(bbox,id,idx,score,image_id = 0):
             'bbox':  list(map(int,bbox.tolist())),
             'area': width * height,
             'segmentation': [],
-            'iscrowd':0
+            'iscrowd':0,
+            "keypoints":[],
+            "num_keypoints":0,
+            'score':score
             }
     return data
     
@@ -196,8 +200,10 @@ def coco_format_inverter(result):
 def coco_format_inverter_batch(result_list,image_list):
     json_data = {}
     json_data["annotations"] = []
+    print("image_list from formater: ",image_list)
     for r in range(len(result_list)):
-        file_name = str(image_list[r]).split(" ")[1].replace("'","").split(".")[0]
+        # file_name = str(image_list[r]).split(" ")[1].replace("'","").split(".")[0]
+        file_name = str(image_list[r]).split("/")[-1].split(".")[0]
         if "MASKS" in list(result_list[r].keys()):
             for i in range(len(result_list[r]["MASKS"])):
                 binary_mask = np.where(result_list[r]["MASKS"][i] > 0,255,0)
@@ -207,7 +213,7 @@ def coco_format_inverter_batch(result_list,image_list):
                                                result_list[r]["CLASSES"][i],
                                                i,
                                                result_list[r]["SCORES"][i],
-                                               image_id = int(file_name))
+                                               image_id = str(file_name))
                 if data == None: pass
                 else:json_data["annotations"].append(data)
         else:
@@ -216,7 +222,7 @@ def coco_format_inverter_batch(result_list,image_list):
                                            result_list[r]["classes__1"][i],
                                            i,
                                            result_list[r]["scores__2"][i],
-                                           image_id = int(file_name))
+                                           image_id = str(file_name))
                 json_data["annotations"].append(data)
     
     
