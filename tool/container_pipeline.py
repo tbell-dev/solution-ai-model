@@ -11,6 +11,7 @@ from detectron2.config import get_cfg
 from detectron2.data import transforms as T
 from detectron2.data import DatasetMapper, build_detection_train_loader
 import shutil
+import subprocess
 from glob import glob
 import os, argparse
 import random, json 
@@ -460,7 +461,7 @@ def deploy_servable_model(cfg,sample_image,output_dir_name): # output_dir_name =
     model_export_to_onnx(cfg,sample_image,cfg.OUTPUT_DIR)
     return output_dir_name[1]
 
-def model_ctl(ctl,model_name,host= "localhost",port = 8000):
+def model_ctl(ctl,model_name,host= "172.17.0.1",port = 8000):
     triton_client = httpclient.InferenceServerClient(url=host+":"+str(port), verbose=False)
     if ctl == "load":
         triton_client.load_model(model_name)
@@ -499,11 +500,24 @@ if __name__ == '__main__':
         cfg.MODEL.WEIGHTS = weight_path
         sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
         model_name = deploy_servable_model(cfg,sample_image,output_dir_name=cfg.OUTPUT_DIR.split("/")[-3:])
-        D2toTensorflow(cfg,weight_path,dataset_dir,cfg.OUTPUT_DIR+"/model")
-        if labeling_type == "bbox":
-            model_ctl("load",model_name,host = str(serving_host),port = 8000)
-        elif labeling_type == "polygon" or labeling_type == "segment":
-            model_ctl("load",model_name,host = str(serving_host),port = 8001)
-            model_ctl("load","infer_pipeline_"+model_name,host =  str(serving_host),port = 8001)
+        # D2toTensorflow(cfg,weight_path,dataset_dir,cfg.OUTPUT_DIR+"/model")
+        # if labeling_type == "bbox":
+        #     model_ctl("load",model_name,host = str(serving_host),port = 8000)
+        # elif labeling_type == "polygon" or labeling_type == "segment":
+        #     model_ctl("load",model_name,host = str(serving_host),port = 8001)
+        #     model_ctl("load","infer_pipeline_"+model_name,host =  str(serving_host),port = 8001)
+        
+        # change directory permission
+        # cmds = ["chmod -R 664 /workspace/dataset","chmod 775 /workspace/dataset", "chown -R tbelldev:tbelldev /workspace/dataset",
+        #         "chmod 775 /workspace/dataset/train", 
+        #         "chmod 775 /workspace/dataset/val", 
+        #         "chmod -R 664 /workspace/output","chmod 775 /workspace/output", "chown -R tbelldev:tbelldev /workspace/output",
+        #         "chmod -R 664 /workspace/models","chmod 775 /workspace/models", "chown -R tbelldev:tbelldev /workspace/models"]
+        cmds = ["chown -R tbelldev:tbelldev /workspace/dataset",
+                "chown -R tbelldev:tbelldev /workspace/output",
+                "chown -R tbelldev:tbelldev /workspace/models"]
+        for cmd in cmds:
+            subprocess.call(cmd, shell=True, stdin=subprocess.PIPE,
+                    universal_newlines=True)
         
         
