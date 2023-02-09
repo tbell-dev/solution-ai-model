@@ -197,13 +197,15 @@ def coco_format_inverter(result):
             json_data["annotations"].append(data)
     return json_data
 
-def coco_format_inverter_batch(result_list,image_list):
+def coco_format_inverter_batch(result_list,image_list,is_local=False):
     json_data = {}
     json_data["annotations"] = []
     print("image_list from formater: ",image_list)
     for r in range(len(result_list)):
-        # file_name = str(image_list[r]).split(" ")[1].replace("'","").split(".")[0]
-        file_name = str(image_list[r]).split("/")[-1].split(".")[0]
+        if is_local:
+            file_name = str(image_list[r]).split(" ")[1].replace("'","").split(".")[0]
+        else:
+            file_name = str(image_list[r]).split("/")[-1].split(".")[0]
         if "MASKS" in list(result_list[r].keys()):
             for i in range(len(result_list[r]["MASKS"])):
                 binary_mask = np.where(result_list[r]["MASKS"][i] > 0,255,0)
