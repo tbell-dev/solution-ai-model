@@ -3,7 +3,7 @@ from tool.augmentation import augmentator
 import argparse
 # import docker
 from modules.container_ctl import train_server_start, get_container_list
-import json, glob
+import json, glob,os
 
 def define_label_type(jsonpath):
     jsonfile = [i for i in glob.glob(jsonpath+"/*.json")][0]
@@ -36,11 +36,11 @@ class activeLearning:
                  aug_iter = 10,
                  device_id = 1,
                  base_url = 'tcp://192.168.0.2:2375',
-                 serving_host = "192.168.0.3",
+                 serving_host = "172.17.0.1",
                  labeling_type = None):
                 
         self.dataset_path = str(dataset_dir)+"/" 
-        self.aug_dataset_path = str(self.dataset_path) + "/augmented/" 
+        self.aug_dataset_path = str(self.dataset_path) + "augmented/" 
         self.project_name = str(project_name) 
         self.serving_host = serving_host
         
@@ -68,7 +68,11 @@ class activeLearning:
                     iter = self.iter)
         
     def activate_train_validation_export(self):
-        
+        if "." in self.aug_dataset_path:
+            self.aug_dataset_path = "/".join(os.getcwd().split("/")[:-1])+self.aug_dataset_path.strip("..")
+            self.model_repository = "/".join(os.getcwd().split("/")[:-1])+"/"+self.model_repository
+            self.servable_model_path = "/".join(os.getcwd().split("/")[:-1])+"/"+self.servable_model_path
+            
         train_server_start(self.aug_dataset_path,
                           self.model_repository, 
                           self.servable_model_path,
