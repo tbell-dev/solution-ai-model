@@ -26,4 +26,6 @@ RUN /bin/bash -c "source activate detectron2 && pip install opencv-python && \
     python -m pip install -e /workspace/detectron2 && pip install tensorpack==0.11 \
     pip install docker && pip install fairscale && pip install timm && pip install tritonclient[all]"
 
+RUN adduser --disabled-password --gecos "" tbelldev
+
 SHELL ["conda", "run", "--no-capture-output", "-n", "detectron2", "/bin/bash", "-c"]
