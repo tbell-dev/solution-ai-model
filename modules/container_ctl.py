@@ -46,24 +46,24 @@ def train_server_start(dataset_path,
     
     client = docker.DockerClient(base_url=base_url)
     container = client.containers.run(
-    image = 'tbelldev/sslo-ai:t-v0.3',
+    image = 'tbelldev/sslo-ai:t-v0.5',
     name = "train_server_"+str(project_name),
     detach=True,
     runtime="nvidia",
     device_requests=[
         docker.types.DeviceRequest(device_ids=[str(device_id)], capabilities=[["gpu"]])
     ],
-    volumes = {os.getcwd()+'/tool':{'bind':"/workspace/src",'mode':"rw"},
+    volumes = {os.getcwd()+'/solution_ai_model/tool':{'bind':"/workspace/src",'mode':"rw"},
                dataset_path:{"bind":"/workspace/dataset","mode":"rw"},
                servable_model_repo:{"bind":"/workspace/models","mode":"rw"}, 
                model_repo:{"bind":"/workspace/output","mode":"rw"} 
                },
+    
     command = f"conda run --no-capture-output -n detectron2 \
                 python src/container_pipeline.py \
                     --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name} --serving_host {serving_host}", #--ouput_host {host_model_repo}
     remove = True
     )
-    
     return container
 
 def inference_server_start(model_repo_path,port,type = "od",device_id = 0,mode = "explicit",base_url = 'tcp://192.168.0.2:2375'):
