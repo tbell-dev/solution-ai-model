@@ -21,7 +21,8 @@ class augmentator:
         self.output_dir = output_dir
         self.task = labeling_type
         self.iter = iter
-        self.img_list = [i for i in glob(self.dataset_path+"/*.jpg")]
+        # self.img_list = [i for i in glob(self.dataset_path+"/*.jpg")]
+        self.img_list = [i for ext in ('*.jpg', '*.jpeg', '*.JPEG',"*.JPG") for i in glob(self.dataset_path+"/"+ext)]
         imsize_list = [cv2.imread(i).shape for i in self.img_list]
         width_list = [imsize_list[i][1] for i in range(len(imsize_list))]
         height_list = [imsize_list[i][0] for i in range(len(imsize_list))]
@@ -78,7 +79,7 @@ class augmentator:
             ann_ids = coco_annotation.getAnnIds(imgIds=[imgids[i]], iscrowd=None)
             anns = coco_annotation.loadAnns(ann_ids)
             
-            img_file_name = [imginfo["file_name"] for imginfo in coco_data["images"] if imginfo["id"] == imgids[i]][0]
+            img_file_name = [imginfo["file_name"].split("/")[-1] for imginfo in coco_data["images"] if imginfo["id"] == imgids[i]][0]
             for j in range(len(anns)):
                 if self.task == 'seg':
                     cat_list.append(anns[j]["category_id"])
@@ -91,7 +92,6 @@ class augmentator:
                 
             # images = [img1,img2,.....] / masks = [[mask1,mask2,mask3,....],[mask1,mask2,mask3,....],[mask1,mask2,mask3,....],......] masks의 각 인덱스는 images의 각 인덱스와 매핑됨,
             # masks[n] = [mask1,mask2,mask3,...] : img1 에 포함되어있는 class들의 마스크 즉, mask1 ~ maskn 은 cat_list의 인덱스와 매핑됨
-            
             if self.task == 'seg':
                 images,labels = self.aug_apply(cv2.cvtColor(cv2.imread(self.dataset_path+img_file_name), cv2.COLOR_BGR2RGB),mask_or_box = mask_list,iter=self.iter)
             elif self.task == 'od':
