@@ -7,8 +7,8 @@ AI core 아키텍쳐
 ## Docker Images
 docker hub URL [here](https://hub.docker.com/repository/docker/tbelldev/sslo-ai)
 ```sh
-t-v0.1 / t-v0.2 / t-v0.3 : container for train(active learning)
-i-v0.1 : container for inference(auto-labeling) 
+t-v0.1 / t-v0.2 / t-v0.3 / t-v0.4 / t-v0.5: container for train(active learning)
+i-v0.1 / i-v0.2: container for inference(auto-labeling) 
 ```
 
 ## version compatibility
