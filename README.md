@@ -15,20 +15,20 @@ i-v0.1 : container for inference(auto-labeling)
 ```sh
 OS : Ubuntu 18.04
 GPU : Geforce RTX 3090 (2EA) 
-nvidia driver (nvidia-driver-470)
-cuda(11.3)
-cudnn(8.2.1)
-pytorch(1.12.1)
+nvidia driver (nvidia-driver-515)
+cuda(11.7)
+cudnn(8.8.0)
+pytorch(1.13.1)
 docker (v20.10.17)
 nvidia-docker
 detectron2(v0.6)
-triton server(2.12.0)
+triton server(2.25.0)
 ```
 
 ## pytorch & detectron installation info(Don't need to install)
 ### pytorch
 ```sh
-pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
 ```
 ### detectron2
 ```sh
