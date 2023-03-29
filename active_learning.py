@@ -34,6 +34,10 @@ class activeLearning:
                  model_repository,
                  split = 0.7,
                  aug_iter = 10,
+                 model_name = "",
+                 epoch = 1000,
+                 lr = 0.00025,
+                 batch_size = 2,
                  device_id = 1,
                  base_url = 'tcp://192.168.0.2:2375',
                  serving_host = "172.17.0.1",
@@ -59,6 +63,11 @@ class activeLearning:
         self.servable_model_path = str(servable_model_path)
         self.device_id = int(device_id)
         self.base_url = base_url
+
+        self.model_name = model_name
+        self.epoch = epoch
+        self.lr = lr
+        self.batch_size = batch_size
         self.activate()
         
     def activate_aug(self):
@@ -77,6 +86,10 @@ class activeLearning:
                           self.model_repository, 
                           self.servable_model_path,
                           self.labeling_type,
+                          self.model_name,
+                          self.epoch,
+                          self.lr,
+                          self.batch_size,
                           self.project_name,
                           self.device_id,
                           serving_host = self.serving_host,

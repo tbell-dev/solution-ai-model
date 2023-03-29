@@ -1,7 +1,7 @@
 import docker , os
 from glob import glob
 
-def get_container_list(base_url = 'tcp://192.168.0.2:2375'):
+def get_container_list(base_url = 'tcp://192.168.0.3:2375'):
     name_list = []
     # client = docker.from_env()
     client = docker.DockerClient(base_url=base_url)
@@ -10,7 +10,7 @@ def get_container_list(base_url = 'tcp://192.168.0.2:2375'):
         name_list.append(name)
     return name_list
 
-def get_port_usage(base_url = 'tcp://192.168.0.2:2375'):
+def get_port_usage(base_url = 'tcp://192.168.0.3:2375'):
     # client = docker.from_env()
     client = docker.DockerClient(base_url=base_url)
     ports_in_use = {}
@@ -20,7 +20,7 @@ def get_port_usage(base_url = 'tcp://192.168.0.2:2375'):
         else:ports_in_use[str(i.name)] = list(container.ports.items())[0][-1][0]["HostPort"]
     return ports_in_use
 
-def stop_container(name,base_url = 'tcp://192.168.0.2:2375'):
+def stop_container(name,base_url = 'tcp://192.168.0.3:2375'):
     # client = docker.from_env()
     client = docker.DockerClient(base_url=base_url)
     for i in client.containers.list():
@@ -28,7 +28,7 @@ def stop_container(name,base_url = 'tcp://192.168.0.2:2375'):
         if name == container_name :
             i.stop()
 
-def rm_container(name,base_url = 'tcp://192.168.0.2:2375'):
+def rm_container(name,base_url = 'tcp://192.168.0.3:2375'):
     client = docker.DockerClient(base_url=base_url)
     for i in client.containers.list():
         container_name = i.name
@@ -39,9 +39,13 @@ def train_server_start(dataset_path,
                        model_repo,
                        servable_model_repo,
                        labeling_type,
+                       model_name,
+                       epoch,
+                       lr,
+                       batch_size,
                        project_name,
                        device_id,
-                       base_url = 'tcp://192.168.0.2:2375',
+                       base_url = 'tcp://192.168.0.3:2375',
                        serving_host = "192.168.0.3"):
     
     client = docker.DockerClient(base_url=base_url)
@@ -61,12 +65,17 @@ def train_server_start(dataset_path,
     
     command = f"conda run --no-capture-output -n detectron2 \
                 python src/container_pipeline.py \
-                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name} --serving_host {serving_host}", #--ouput_host {host_model_repo}
+                    --dataset_dir /workspace/dataset --labeling_type {labeling_type} --project_name {project_name} --serving_host {serving_host} \
+                       --model_name {model_name} --epoch {epoch} --lr {lr} --batch_size {batch_size}", #--ouput_host {host_model_repo}
     remove = True
     )
     return container
 
-def inference_server_start(model_repo_path,port,type = "od",device_id = 0,mode = "explicit",base_url = 'tcp://192.168.0.2:2375'):
+def inference_server_start(model_repo_path,
+                           port,
+                           type = "od",
+                           device_id = 0,
+                           mode = "explicit",base_url = 'tcp://192.168.0.2:2375'):
     # client = docker.from_env()
     client = docker.DockerClient(base_url=base_url)
     option = ""
@@ -80,7 +89,7 @@ def inference_server_start(model_repo_path,port,type = "od",device_id = 0,mode =
         option = " --repository-poll-secs=10"
         
     container = client.containers.run(
-    image = 'tbelldev/sslo-ai:i-v0.1',
+    image = 'tbelldev/sslo-ai:i-v0.2',
     name = ct_name,
     detach=True,
     runtime="nvidia",

@@ -15,75 +15,95 @@ def convertToBinaryData(filename):
 
 def inference(model_name,image_file,task_type,port=8000,host = "localhost",print_output=True):
     e = time.time()
-    if task_type == "seg":
-        pred = client_v2(image_file, model_name,task_type,port,host,print_output)
-    elif task_type == "od":
-        pred = client_v1(image_file, model_name,task_type,port,host,print_output)
+    pred = client_v2(image_file, model_name,task_type,port,host,print_output)
     s = time.time()
     print('speed:', (s - e))
     return pred
 
-def client_v1(image_file, model_name,task_type,port=8000,host = "localhost",print_output=True):
-    img = np.array(Image.open(image_file))
-    img = np.ascontiguousarray(img.transpose(2, 0, 1))
-    # Define model's inputs
-    inputs = []
-    inputs.append(httpclient.InferInput('image__0', img.shape, "UINT8"))
-    inputs[0].set_data_from_numpy(img)
-    # Define model's outputs
-    outputs = []
-    if task_type == "seg":
-        outputs.append(httpclient.InferRequestedOutput('bboxes__0'))
-        outputs.append(httpclient.InferRequestedOutput('classes__1'))
-        outputs.append(httpclient.InferRequestedOutput('masks__2'))
-        outputs.append(httpclient.InferRequestedOutput('scores__3'))
-        outputs.append(httpclient.InferRequestedOutput('shape__4'))
-    elif task_type == "od":
-        outputs.append(httpclient.InferRequestedOutput('bboxes__0'))
-        outputs.append(httpclient.InferRequestedOutput('classes__1'))
-        outputs.append(httpclient.InferRequestedOutput('scores__2'))
-        outputs.append(httpclient.InferRequestedOutput('shape__3'))
+# def client_v1(image_file, model_name,task_type,port=8000,host = "localhost",print_output=True):
+#     img = np.array(Image.open(image_file))
+#     img = np.ascontiguousarray(img.transpose(2, 0, 1))
+#     # Define model's inputs
+#     inputs = []
+#     inputs.append(httpclient.InferInput('image__0', img.shape, "UINT8"))
+#     inputs[0].set_data_from_numpy(img)
+#     # Define model's outputs
+#     outputs = []
+#     if task_type == "seg":
+#         outputs.append(httpclient.InferRequestedOutput('bboxes__0'))
+#         outputs.append(httpclient.InferRequestedOutput('classes__1'))
+#         outputs.append(httpclient.InferRequestedOutput('masks__2'))
+#         outputs.append(httpclient.InferRequestedOutput('scores__3'))
+#         outputs.append(httpclient.InferRequestedOutput('shape__4'))
+#     elif task_type == "od":
+#         outputs.append(httpclient.InferRequestedOutput('bboxes__0'))
+#         outputs.append(httpclient.InferRequestedOutput('classes__1'))
+#         outputs.append(httpclient.InferRequestedOutput('scores__2'))
+#         outputs.append(httpclient.InferRequestedOutput('shape__3'))
         
-    # Send request to Triton server
-    triton_client = httpclient.InferenceServerClient(
-        url=host+":"+str(port), verbose=False)
-    results = triton_client.infer(model_name, inputs=inputs, outputs=outputs)
-    response_info = results.get_response()
-    outputs = {}
+#     # Send request to Triton server
+#     triton_client = httpclient.InferenceServerClient(
+#         url=host+":"+str(port), verbose=False)
+#     results = triton_client.infer(model_name, inputs=inputs, outputs=outputs)
+#     response_info = results.get_response()
+#     outputs = {}
     
-    for output_info in response_info['outputs']:
-        output_name = output_info['name']
-        outputs[output_name] = results.as_numpy(output_name)
+#     for output_info in response_info['outputs']:
+#         output_name = output_info['name']
+#         outputs[output_name] = results.as_numpy(output_name)
         
-    return outputs
+#     return outputs
 
 
 def client_v2(image_file, model_name,task_type,port=8000, host = "localhost",print_output=False):
-    if type(image_file) == str:
-        with open(image_file, 'rb') as fi:
-            image_bytes = fi.read()
-        image_bytes = np.array([image_bytes], dtype=np.bytes_)
-    else:
-        img = np.array(Image.open(image_file))
-        _, encoded_image  = cv2.imencode('.png', img)
-        image_bytes = np.array([encoded_image.tobytes()], dtype=np.bytes_)
-    # Define model's inputs
-    inputs = []
-    inputs.append(httpclient.InferInput('IMAGE_BYTES', image_bytes.shape, "BYTES"))
-    inputs[0].set_data_from_numpy(image_bytes)
-    # Define model's outputs
-    outputs = []
-    
     if task_type == "seg":
+        if type(image_file) == bytes:
+            image_bytes = image_file
+        else:
+            with open(image_file, 'rb') as fi:
+                image_bytes = fi.read()
+        image_bytes = np.array([image_bytes], dtype=np.bytes_)
+        # Define model's inputs
+        inputs = []
+        inputs.append(httpclient.InferInput('IMAGE_BYTES', image_bytes.shape, "BYTES"))
+        inputs[0].set_data_from_numpy(image_bytes)
+        # Define model's outputs
+        outputs = []
+
         outputs.append(httpclient.InferRequestedOutput('BBOXES'))
         outputs.append(httpclient.InferRequestedOutput('CLASSES'))
         outputs.append(httpclient.InferRequestedOutput('MASKS'))
         outputs.append(httpclient.InferRequestedOutput('SCORES'))
     elif task_type == "od":
+        img = np.array(Image.open(image_file))
+        img = np.ascontiguousarray(img.transpose(2, 0, 1))
+        # Define model's inputs
+        inputs = []
+        inputs.append(httpclient.InferInput('image__0', img.shape, "UINT8"))
+        inputs[0].set_data_from_numpy(img)
+        # Define model's outputs
+        outputs = []
+
         outputs.append(httpclient.InferRequestedOutput('bboxes__0'))
         outputs.append(httpclient.InferRequestedOutput('classes__1'))
         outputs.append(httpclient.InferRequestedOutput('scores__2'))
         outputs.append(httpclient.InferRequestedOutput('shape__3'))
+    elif task_type == "keypoint":
+        img = np.array(Image.open(image_file))
+        img = np.ascontiguousarray(img.transpose(2, 0, 1))
+        # Define model's inputs
+        inputs = []
+        inputs.append(httpclient.InferInput('image__0', img.shape, "UINT8"))
+        inputs[0].set_data_from_numpy(img)
+        # Define model's outputs
+        outputs = []
+        outputs.append(httpclient.InferRequestedOutput('bboxes__0'))
+        outputs.append(httpclient.InferRequestedOutput('classes__1'))
+        outputs.append(httpclient.InferRequestedOutput('keypoint_heatmaps__2'))
+        outputs.append(httpclient.InferRequestedOutput('keypoints__3'))
+        outputs.append(httpclient.InferRequestedOutput('scores__4'))
+        outputs.append(httpclient.InferRequestedOutput('shape__5'))
+
     # Send request to Triton server
     triton_client = httpclient.InferenceServerClient(
         url=host+":"+str(port), verbose=False)
@@ -161,6 +181,18 @@ def infer_result_filter_conf(pred,task_type,score:float):
         # filter result
         for idx in idx_list: 
             for key in list(pred.keys())[:3]:
+                if len(new_pred[key]) == 0:
+                    new_pred[key] = [pred[key][idx]]
+                else : new_pred[key].append(pred[key][idx])
+
+    elif task_type == "keypoint":
+        for i in range(len(pred[list(pred.keys())[4]])):
+            if pred[list(pred.keys())[4]][i] >= score:
+                idx_list.append(i)
+            
+        # filter result
+        for idx in idx_list: 
+            for key in list(pred.keys())[:5]:
                 if len(new_pred[key]) == 0:
                     new_pred[key] = [pred[key][idx]]
                 else : new_pred[key].append(pred[key][idx])

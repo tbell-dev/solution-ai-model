@@ -150,7 +150,7 @@ def create_coco_dict_seg_v2_batch(image,mask,bbox,id,idx,score,image_id = 0):
                         'bbox': [xmin,ymin,width,height],
                         "category_id": id,
                         "id": idx,
-                        "keypoints":[],
+                        "keypoints": [],
                         "num_keypoints":0,
                         "score":score
                         }
@@ -181,7 +181,23 @@ def create_coco_dict_od_batch(bbox,id,idx,score,image_id = 0):
             'score':score
             }
     return data
-    
+
+def create_coco_dict_keypoints(bbox,id,keypoint,idx,score,image_id=0):
+    xmin,ymin,width,height = list(map(int,bbox.tolist()))
+    keypoints = keypoint.tolist()
+    data = {'id': idx,
+            'image_id': image_id,
+            'category_id': id,
+            'bbox':  list(map(int,bbox.tolist())),
+            'area': width * height,
+            'segmentation': [],
+            'iscrowd':0,
+            "keypoints":keypoints,
+            "num_keypoints":len(keypoints),
+            'score':score
+            }
+    return data
+
 
 def coco_format_inverter(result):
     json_data = {}
@@ -191,10 +207,16 @@ def coco_format_inverter(result):
             binary_mask = np.where(result["MASKS"][i] > 0,255,0)
             data = create_coco_dict_seg_v2(binary_mask,result["MASKS"][i],result["BBOXES"][i],result["CLASSES"][i],i,result["SCORES"][i])
             json_data["annotations"].append(data)
-    else:
+    elif "bboxes__0" in list(result.keys()) and "keypoints__3" not in list(result.keys()):
         for i in range(len(result["bboxes__0"])):
             data = create_coco_dict_od(result["bboxes__0"][i],result["classes__1"][i],i,result["scores__2"][i])
             json_data["annotations"].append(data)
+
+    elif "bboxes__0" in list(result.keys()) and "keypoints__3" in list(result.keys()):
+        for i in range(len(result["bboxes__0"])):
+            data = create_coco_dict_keypoints(result["bboxes__0"][i],result["classes__1"][i],result["keypoints__3"][i],i,result["scores__4"][i])
+            json_data["annotations"].append(data)
+
     return json_data
 
 def coco_format_inverter_batch(result_list,image_list,is_local=False):

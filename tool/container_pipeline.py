@@ -235,6 +235,16 @@ def model_version_val(cfg):
         
         elif min(previous_losses) >= latest_loss : 
             return latest_result+"/model_final.pth"
+        
+def get_weight_path(cfg):
+    prj_repo = "/".join(cfg.OUTPUT_DIR.split("/")[:-1])
+    versions = [i for i in glob(prj_repo+"/*")]
+    if len(versions) == 1:
+        return versions[0]+"/model_final.pth"
+    else:
+        latest_result = versions[-1]
+        previous_result = versions[:-1]
+        return latest_result+"/model_final.pth"
 
 def coco_style_gen():
     today = date.today()
@@ -321,10 +331,14 @@ def spliter(augmented_dir,v = 0.7, op = "cp"):
     return train_coco["categories"]
 
 class trainer:
-    def __init__(self,augmentated_dir,project_name,labeling_type = "bbox",v=0.7,op="cp"):
+    def __init__(self,augmentated_dir,project_name,model_name,epoch,learning_rate,batch_size,labeling_type = "bbox",v=0.7,op="cp"):
         self.output_dir = augmentated_dir
         self.v = v
         self.project_name = str(project_name)
+        self.model_name = model_name
+        self.epoch = epoch
+        self.learning_rate = learning_rate
+        self.batch_size = batch_size
         self.cfg = None
         self.labeling_type = labeling_type
         self.train_path = self.output_dir+"/train/"
@@ -343,23 +357,24 @@ class trainer:
         DatasetCatalog.clear()
         
     def start(self):
-        model_pth = ""
         if self.labeling_type == 'bbox':
-            model_pth = "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
+            model_base = "COCO-Detection/faster_rcnn_"
             task_type = "od"
         elif self.labeling_type == 'polygon':
-             model_pth = "COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml"
+             model_base = "COCO-InstanceSegmentation/mask_rcnn_"
              task_type = "seg"
-             
+
+        model_pth = model_base + self.model_name+".yaml"
+
         self.cfg.merge_from_file(model_zoo.get_config_file(model_pth))
         self.cfg.OUTPUT_DIR = f"/workspace/output/{task_type}/{self.project_name}"
         self.cfg.DATASETS.TRAIN = ("my_dataset_train",)
         self.cfg.DATASETS.TEST = ()
         self.cfg.DATALOADER.NUM_WORKERS = 2
         self.cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_pth)  # Let training initialize from model zoo
-        self.cfg.SOLVER.IMS_PER_BATCH = 2 # This is the real "batch size" commonly known to deep learning people
-        self.cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-        self.cfg.SOLVER.MAX_ITER = 1000    # 300 iterations seems good enough for this toy dataset; you will need to train longer for a practical dataset
+        self.cfg.SOLVER.IMS_PER_BATCH = self.batch_size # This is the real "batch size" commonly known to deep learning people
+        self.cfg.SOLVER.BASE_LR = self.learning_rate  # pick a good LR
+        self.cfg.SOLVER.MAX_ITER = self.epoch    # 300 iterations seems good enough for this toy dataset; you will need to train longer for a practical dataset
         self.cfg.SOLVER.STEPS = []        # do not decay learning rate
         self.cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512   # The "RoIHead batch size". 128 is faster, and good enough for this toy dataset (default: 512)
         self.cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(self.cats)  # only has one class (ballon). (see https://detectron2.readthedocs.io/tutorials/datasets.html#update-the-config-for-new-datasets)
@@ -372,10 +387,17 @@ class trainer:
             versions = [i for i in glob(self.cfg.OUTPUT_DIR+"/*")]
             self.cfg.OUTPUT_DIR = f"/workspace/output/{task_type}/{self.project_name}/{str(len(versions)+1)}"
             os.makedirs(self.cfg.OUTPUT_DIR)
-            
+            # Open file in write mode
+            with open(self.cfg.OUTPUT_DIR+'/model_config_name.txt', 'w') as f:
+                # Write content to file
+                f.write(f'{self.model_name}\n')
         else:
             self.cfg.OUTPUT_DIR = self.cfg.OUTPUT_DIR+"/1"
             os.makedirs(self.cfg.OUTPUT_DIR, exist_ok=True)
+            # Open file in write mode
+            with open(self.cfg.OUTPUT_DIR+'/model_config_name.txt', 'w') as f:
+                # Write content to file
+                f.write(f'{self.model_name}\n')
             
         trainer = DefaultTrainer(self.cfg)
         trainer.resume_or_load(resume=False)
@@ -475,6 +497,10 @@ def parse_args():
     parser.add_argument('--project_name', type=str ,default="0",required=True)
     parser.add_argument('--labeling_type', type=str ,default="bbox", required=True)
     parser.add_argument('--serving_host', type=str ,default="172.17.0.1")
+    parser.add_argument('--model_name', type=str ,default="R_50_FPN_3x")
+    parser.add_argument('--epoch', type=int ,default=1000)
+    parser.add_argument('--lr', type=float ,default=0.00025)
+    parser.add_argument('--batch_size', type=int ,default=2)
     parser.add_argument('--split',  type=float ,default=0.7)
     # parser.add_argument('--outputdir',  type=str ,default="/workspace/models/") # mounted with '{project_root}/models' on host
     return parser.parse_args()
@@ -487,19 +513,34 @@ if __name__ == '__main__':
     project_name = args.project_name
     v = args.split
     serving_host = args.serving_host
+
+    model_name = args.model_name
+    epoch = args.epoch
+    lr = args.lr
+    batch_size = args.batch_size
+
     task_type = ""
     
-    train = trainer(dataset_dir,project_name,labeling_type,v=0.8,op="cp")
+    train = trainer(augmentated_dir = dataset_dir,
+                    project_name = project_name,
+                    labeling_type = labeling_type,
+                    model_name = model_name,
+                    epoch = epoch,
+                    learning_rate = lr,
+                    batch_size = batch_size,
+                    v=0.8,
+                    op="cp")
     cfg = train.start()
     
     # weight_path = model_validation(cfg,project_name)
-    weight_path = model_version_val(cfg)
+    # weight_path = model_version_val(cfg)
+    weight_path = get_weight_path(cfg)
     
     
-    if "/".join(weight_path.split("/")[:-1]) == cfg.OUTPUT_DIR:
-        cfg.MODEL.WEIGHTS = weight_path
-        sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
-        model_name = deploy_servable_model(cfg,sample_image,output_dir_name=cfg.OUTPUT_DIR.split("/")[-3:])
+    # if "/".join(weight_path.split("/")[:-1]) == cfg.OUTPUT_DIR:
+    cfg.MODEL.WEIGHTS = weight_path
+    sample_image = [i for i in glob(dataset_dir+"/val/*.jpg")][0]
+    model_name = deploy_servable_model(cfg,sample_image,output_dir_name=cfg.OUTPUT_DIR.split("/")[-3:])
         # D2toTensorflow(cfg,weight_path,dataset_dir,cfg.OUTPUT_DIR+"/model")
         # if labeling_type == "bbox":
         #     model_ctl("load",model_name,host = str(serving_host),port = 8000)
@@ -513,11 +554,11 @@ if __name__ == '__main__':
         #         "chmod 775 /workspace/dataset/val", 
         #         "chmod -R 664 /workspace/output","chmod 775 /workspace/output", "chown -R tbelldev:tbelldev /workspace/output",
         #         "chmod -R 664 /workspace/models","chmod 775 /workspace/models", "chown -R tbelldev:tbelldev /workspace/models"]
-        cmds = ["chown -R tbelldev:tbelldev /workspace/dataset",
-                "chown -R tbelldev:tbelldev /workspace/output",
-                "chown -R tbelldev:tbelldev /workspace/models"]
-        for cmd in cmds:
-            subprocess.call(cmd, shell=True, stdin=subprocess.PIPE,
-                    universal_newlines=True)
+    cmds = ["chown -R tbelldev:tbelldev /workspace/dataset",
+            "chown -R tbelldev:tbelldev /workspace/output",
+            "chown -R tbelldev:tbelldev /workspace/models"]
+    for cmd in cmds:
+        subprocess.call(cmd, shell=True, stdin=subprocess.PIPE,
+                universal_newlines=True)
         
         
