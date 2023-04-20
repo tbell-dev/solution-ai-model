@@ -162,4 +162,4 @@ def model_ctl(ctl,model_name,host= "localhost",port = 8000):
     if ctl == "unload":
         triton_client.unload_model(model_name)
     
-    return [stats for stats in triton_client.get_model_repository_index() if stats["name"] == model_name][0]
+    return [stats for stats in triton_client.get_model_repository_index() if stats["name"] == model_name]

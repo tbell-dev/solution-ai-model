@@ -459,7 +459,13 @@ def deploy_servable_model(cfg,sample_image,output_dir_name): # output_dir_name =
             os.mkdir(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+"/"+output_dir_name[2])
             with open(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+'/config.pbtxt') as f:
                 txt = f.read()
-            text =  txt.replace(f'      model_name: "{output_dir_name[1]}"\n      model_version: {str(int(output_dir_name[2]) - 1)}',
+            
+            versions = [i.split("/")[-1] for i in glob(DEFAULT_MODEL_PATH+"/"+output_dir_name[0]+"/infer_pipeline_"+output_dir_name[1]+"/*") 
+                        if "." not in i.split("/")[-1]]
+            versions.remove(output_dir_name[2]) 
+            last_version = max(list(map(int, versions)))
+
+            text =  txt.replace(f'      model_name: "{output_dir_name[1]}"\n      model_version: {str(last_version)}',
                                 f'      model_name: "{output_dir_name[1]}"\n      model_version: {output_dir_name[2]}')
             
         else:

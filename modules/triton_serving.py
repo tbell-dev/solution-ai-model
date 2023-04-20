@@ -57,6 +57,10 @@ def inference(model_name,image_file,task_type,port=8000,host = "localhost",print
 
 def client_v2(image_file, model_name,task_type,port=8000, host = "localhost",print_output=False):
     if task_type == "seg":
+        if type(model_name) == str:
+            pass 
+        else:
+            model_name = "infer_pipeline_"+str(model_name)
         if type(image_file) == bytes:
             image_bytes = image_file
         else:
